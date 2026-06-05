@@ -118,6 +118,25 @@ docker secret create strava_credentials ./.secure/credentials.txt
 docker stack deploy -c docker-compose.yml strava
 ```
 
+Providing SSL cert/key via secrets
+---------------------------------
+
+You can provide an SSL certificate and private key via Docker secrets so the
+container serves HTTPS directly (useful for simple deployments). Create two
+secrets (or files) named `strava_ssl_cert` and `strava_ssl_key` containing the
+PEM certificate and private key respectively:
+
+```bash
+docker secret create strava_ssl_cert ./.secure/ssl_cert.pem
+docker secret create strava_ssl_key ./.secure/ssl_key.pem
+```
+
+The entrypoint writes these to `/app/ssl/cert.pem` and `/app/ssl/key.pem` and
+sets `SSL_CERTFILE`/`SSL_KEYFILE` environment variables. The development Flask
+server will use them when you run `python -m src.app`, and Gunicorn will pick
+them up via `gunicorn.conf.py` when running in the container.
+
+
 Configuring callback hostname
 ------------------------------
 

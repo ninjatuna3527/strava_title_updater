@@ -2,6 +2,10 @@ version: '3.8'
 secrets:
   strava_credentials:
     file: ./.secure/credentials.txt
+  strava_ssl_cert:
+    file: ./.secure/ssl_cert.pem
+  strava_ssl_key:
+    file: ./.secure/ssl_key.pem
 services:
   app:
     build: .
@@ -20,6 +24,8 @@ services:
       - ./.secure/credentials.txt
     secrets:
       - strava_credentials
+      - strava_ssl_cert
+      - strava_ssl_key
     volumes:
       - ./.secure/strava.db:/data/strava.db
       - ./.secure:/app/.secure:ro
@@ -41,6 +47,8 @@ services:
       - ./.secure/credentials.txt
     secrets:
       - strava_credentials
+      - strava_ssl_cert
+      - strava_ssl_key
     volumes:
       - ./.secure/strava.db:/data/strava.db
       - ./.secure:/app/.secure:ro

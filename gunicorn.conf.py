@@ -15,3 +15,9 @@ keepalive = int(os.getenv('GUNICORN_KEEPALIVE', '2'))
 accesslog = '-'  # stdout
 errorlog = '-'   # stderr
 loglevel = os.getenv('GUNICORN_LOGLEVEL', 'info')
+
+# Optional SSL cert/key for serving HTTPS directly from Gunicorn. If provided
+# via environment variables (set by the entrypoint from Docker secrets),
+# Gunicorn will use them.
+certfile = os.getenv('SSL_CERTFILE') or None
+keyfile = os.getenv('SSL_KEYFILE') or None

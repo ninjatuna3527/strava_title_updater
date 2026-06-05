@@ -108,4 +108,12 @@ if __name__ == '__main__':
         process_new_activities()
         sys.exit(0)
     db.init_db(DB_PATH)
-    app.run(host='0.0.0.0', port=5000)
+    # If SSL cert/key are provided (e.g., via Docker secrets and entrypoint),
+    # use them for the development server. In production Gunicorn handles TLS
+    # using the same files (configured in gunicorn.conf.py).
+    ssl_cert = os.getenv('SSL_CERTFILE')
+    ssl_key = os.getenv('SSL_KEYFILE')
+    if ssl_cert and ssl_key:
+        app.run(host='0.0.0.0', port=5000, ssl_context=(ssl_cert, ssl_key))
+    else:
+        app.run(host='0.0.0.0', port=5000)
