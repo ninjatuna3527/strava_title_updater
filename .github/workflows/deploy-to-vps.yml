@@ -48,6 +48,7 @@ jobs:
           callback_hostname: "${CALLBACK_HOSTNAME:-strava.leeson.zone}"
           base_path: "${BASE_PATH:-/stravaapps}"
           deploy_ssh_key: "${DEPLOY_SSH_KEY}"
+          YML
 
       - name: Add VPS to known_hosts
         run: |
