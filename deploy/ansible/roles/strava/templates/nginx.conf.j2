@@ -1,10 +1,10 @@
 server {
     listen 80;
-    server_name {{ nginx_server_name }};
+    server_name {{ nginx_server_name | default('localhost') }};
     # Serve the application under the configured base path and proxy
     # to the local Gunicorn instance on port 5000. Requests to
-    # {{ base_path }}/... are forwarded with the prefix stripped.
-    location {{ base_path }}/ {
+    # /{{ base_path }}/... are forwarded with the prefix stripped.
+    location /{{ base_path }}/ {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -22,12 +22,12 @@ server {
     }
 
     # normalize missing-trailing-slash requests (e.g. /stravaapps -> /stravaapps/)
-    location = {{ base_path }} {
+    location = /{{ base_path }} {
         return 301 {{ base_path }}/;
     }
 
     # Health endpoint exposed at the base path
-    location = {{ base_path }}/health {
+    location = /{{ base_path }}/health {
         proxy_pass http://127.0.0.1:5000/health;
     }
 
@@ -40,7 +40,7 @@ server {
 {% if enable_tls %}
 server {
     listen 443 ssl;
-    server_name {{ nginx_server_name }};
+    server_name {{ nginx_server_name | default('localhost') }};
 
     ssl_certificate {{ ssl_cert_path }};
     ssl_certificate_key {{ ssl_key_path }};
@@ -60,11 +60,11 @@ server {
         proxy_set_header Connection "";
     }
 
-    location = {{ base_path }} {
+    location = /{{ base_path }} {
         return 301 {{ base_path }}/;
     }
 
-    location = {{ base_path }}/health {
+    location = /{{ base_path }}/health {
         proxy_pass http://127.0.0.1:5000/health;
     }
 }
