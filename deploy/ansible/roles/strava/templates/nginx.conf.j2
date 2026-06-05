@@ -1,8 +1,7 @@
 server {
     listen 80;
     server_name {{ nginx_server_name }};
-
-    # Serve the application under a base path (e.g. /stravaapps) and proxy
+    # Serve the application under the configured base path and proxy
     # to the local Gunicorn instance on port 5000. Requests to
     # {{ base_path }}/... are forwarded with the prefix stripped.
     location {{ base_path }}/ {
@@ -10,12 +9,24 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        # Let the upstream receive the path without the base prefix.
+
+        # Strip the base_path prefix before passing to upstream
         proxy_pass http://127.0.0.1:5000/;
-        proxy_redirect off;
+        # Rewrite Location headers from upstream so redirects return to the base path
+        proxy_redirect / {{ base_path }}/;
+
+        # Websocket / keep-alive headers
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "";
     }
 
-    # Health endpoint exposed at the root of the base path
+    # normalize missing-trailing-slash requests (e.g. /stravaapps -> /stravaapps/)
+    location = {{ base_path }} {
+        return 301 {{ base_path }}/;
+    }
+
+    # Health endpoint exposed at the base path
     location = {{ base_path }}/health {
         proxy_pass http://127.0.0.1:5000/health;
     }
