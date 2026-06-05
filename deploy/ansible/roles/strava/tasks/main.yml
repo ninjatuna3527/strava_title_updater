@@ -9,6 +9,7 @@
       - supervisor
     state: present
     update_cache: yes
+  become: true
 
 
 - name: Ensure deploy directory exists
@@ -44,6 +45,7 @@
     owner: root
     group: root
     mode: '0644'
+  become: true
 
 - name: Ensure log files exist
   file:
@@ -52,6 +54,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0644'
+  become: true
 
 - name: Ensure stderr log file exists
   file:
@@ -60,6 +63,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0644'
+  become: true
 
 - name: Install certbot if needed
   apt:
@@ -68,6 +72,7 @@
       - python3-certbot-nginx
     state: present
   when: enable_tls and nginx_server_name is defined and nginx_server_name != 'localhost'
+  become: true
 - name: Set ssl paths for template
   set_fact:
     ssl_cert_path: >-
@@ -102,38 +107,47 @@
     owner: root
     group: root
     mode: '0644'
+  become: true
 
 - name: Enable Nginx site
   file:
     src: "/etc/nginx/sites-available/{{ supervisor_program }}.conf"
     dest: "/etc/nginx/sites-enabled/{{ supervisor_program }}.conf"
     state: link
+  become: true
 
 - name: Test Nginx configuration
   command: nginx -t
+  become: true
 
 - name: Reload Nginx
   service:
     name: nginx
     state: reloaded
+  become: true
 
 - name: Obtain Let's Encrypt cert (non-interactive)
   command: >-
     certbot --nginx -d {{ nginx_server_name }} --non-interactive --agree-tos -m {{ ssl_contact_email }}
   when: enable_tls and nginx_server_name is defined and nginx_server_name != 'localhost'
+  become: true
 
 - name: Ensure supervisor service is enabled and running
   service:
     name: supervisor
     state: started
     enabled: yes
+  become: true
 
 - name: Reload supervisor configurations
   command: supervisorctl reread
+  become: true
 
 - name: Update supervisor and apply changes
   command: supervisorctl update
+  become: true
 
 - name: Restart the application program
   shell: supervisorctl restart {{ supervisor_program }} || supervisorctl start {{ supervisor_program }}
   warn: false
+  become: true
