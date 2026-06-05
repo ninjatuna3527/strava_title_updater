@@ -28,7 +28,6 @@ CLIENT_SECRET = os.getenv('STRAVA_CLIENT_SECRET')
 BASE_URL = os.getenv('BASE_URL', 'http://localhost:5000')
 CALLBACK_HOSTNAME = os.getenv('CALLBACK_HOSTNAME')
 CALLBACK_SCHEME = os.getenv('CALLBACK_SCHEME')
-BASE_PATH = os.getenv('BASE_PATH', '')
 
 # Ensure Flask finds the top-level `templates/` directory when running as a module
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -37,11 +36,6 @@ app = Flask(__name__, template_folder=templates_dir)
 # secret key for session; prefer setting via FLASK_SECRET_KEY in environment
 app.secret_key = os.getenv('FLASK_SECRET_KEY') or secrets.token_urlsafe(32)
 
-
-@app.context_processor
-def inject_base_path():
-    """Expose `BASE_PATH` to templates so links can include the prefix."""
-    return dict(BASE_PATH=BASE_PATH)
 
 
 @app.route('/')
@@ -68,9 +62,9 @@ def authorize():
     # includes that prefix so Strava redirects back correctly.
     if CALLBACK_HOSTNAME:
         scheme = CALLBACK_SCHEME or ('https' if BASE_URL.startswith('https') else 'http')
-        redirect_uri = f"{scheme}://{CALLBACK_HOSTNAME}{BASE_PATH}/callback"
+        redirect_uri = f"{scheme}://{CALLBACK_HOSTNAME}/callback"
     else:
-        redirect_uri = f"{BASE_URL}{BASE_PATH}/callback"
+        redirect_uri = f"/callback"
     url = (
         f"https://www.strava.com/oauth/authorize?client_id={CLIENT_ID}"
         f"&response_type=code&redirect_uri={redirect_uri}&approval_prompt=force&scope=activity:write,activity:read_all"
