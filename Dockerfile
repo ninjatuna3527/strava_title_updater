@@ -20,4 +20,5 @@ ENV FLASK_RUN_HOST=0.0.0.0
 EXPOSE 5000
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "wsgi:app"]
+# Use shell form so we can expand environment variables at container start.
+CMD ["sh", "-c", "gunicorn -w ${GUNICORN_WORKERS:-4} -b 0.0.0.0:5000 wsgi:app --config /app/gunicorn.conf.py"]
