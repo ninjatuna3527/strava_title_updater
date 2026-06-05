@@ -13,6 +13,7 @@ jobs:
       VPS_HOST: ${{ secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.VPS_USER }}
       VPS_PORT: ${{ secrets.VPS_PORT }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
       BASE_PATH: ${{ secrets.BASE_PATH }}
       SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
 
@@ -52,6 +53,7 @@ jobs:
 
       - name: Run Ansible playbook (prod inventory)
         env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
           BASE_PATH: ${{ secrets.BASE_PATH }}
         run: |
