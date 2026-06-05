@@ -40,14 +40,14 @@ server {
 {% if enable_tls %}
 server {
     listen 443 ssl;
-    server_name {{ nginx_server_name | default('localhost') }};
+    server_name {{ nginx_server_name }};
 
     ssl_certificate {{ ssl_cert_path }};
     ssl_certificate_key {{ ssl_key_path }};
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
     # Serve the app under the same base_path on HTTPS as on HTTP
-    location {{ base_path }}/ {
+    location = /{{ base_path }}/ {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
