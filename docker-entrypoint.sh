@@ -20,3 +20,17 @@ if [ -f /app/.secure/credentials.txt ]; then
 fi
 
 exec "$@"
+
+# If GUNICORN_WORKERS is not set, compute a sensible default: (2 * CPU) + 1
+if [ -z "$GUNICORN_WORKERS" ]; then
+  if command -v nproc >/dev/null 2>&1; then
+    CPUS=$(nproc)
+  elif [ -f /proc/cpuinfo ]; then
+    CPUS=$(grep -c ^processor /proc/cpuinfo)
+  else
+    CPUS=1
+  fi
+  export GUNICORN_WORKERS=$((2 * CPUS + 1))
+fi
+
+exec "$@"

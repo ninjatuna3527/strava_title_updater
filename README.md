@@ -104,4 +104,36 @@ Scheduler / periodic processing
 
 ```
 Processed activities, updated: 3, skipped: 5
+
+Production: Gunicorn & tuning
+--------------------------------
+
+This project uses `gunicorn` as the production WSGI server. The container
+entrypoint will auto-detect a sensible default worker count when
+`GUNICORN_WORKERS` is not provided: `GUNICORN_WORKERS = (2 * CPUs) + 1`.
+
+Recommended quick overrides (set in `.env`, Compose, or your orchestrator):
+
+```
+GUNICORN_WORKERS=3
+GUNICORN_TIMEOUT=60
+GUNICORN_LOGLEVEL=info
+```
+
+Guideline for workers: `(2 x CPU cores) + 1` is a good starting point for
+Gunicorn worker count; tune upwards if you expect many concurrent requests and
+have spare CPU.
+
+Restarting with Docker Compose:
+
+```powershell
+docker compose down
+docker compose up --build -d
+docker compose logs -f app
+```
+
+You can provide production overrides via `docker-compose.override.yml` which
+is included in this repository and contains example settings for `app` and
+`worker` services (restart policy, resource limits and env overrides).
+
 ```
