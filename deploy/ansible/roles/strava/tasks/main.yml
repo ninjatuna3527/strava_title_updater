@@ -135,4 +135,6 @@
   command: supervisorctl update
 
 - name: Restart the application program
-  command: supervisorctl restart {{ supervisor_program }} || supervisorctl start {{ supervisor_program }}
+  shell: supervisorctl restart {{ supervisor_program }} || supervisorctl start {{ supervisor_program }}
+  args:
+    warn: false
