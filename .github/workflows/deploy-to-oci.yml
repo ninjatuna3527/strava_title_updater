@@ -1,0 +1,75 @@
+name: Deploy to Oracle Cloud
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "yes" to confirm deploy to Oracle Cloud'
+        required: true
+        default: 'no'
+      image_tag:
+        description: 'Optional image tag to deploy (defaults to commit sha)'
+        required: false
+
+jobs:
+  deploy:
+    if: "github.event.inputs.confirm == 'yes'"
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install OCI CLI
+        run: pip install oci
+
+      - name: Configure OCI credentials
+        env:
+          OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
+        run: |
+          mkdir -p $HOME/.oci
+          if [ -n "${OCI_PRIVATE_KEY}" ]; then
+            echo "${OCI_PRIVATE_KEY}" | sed 's/\r$//' > $HOME/.oci/oci_api_key.pem
+            chmod 600 $HOME/.oci/oci_api_key.pem
+          fi
+          cat > $HOME/.oci/config <<EOF
+[DEFAULT]
+user=${{ secrets.OCI_USER_OCID }}
+tenancy=${{ secrets.OCI_TENANCY_OCID }}
+region=${{ secrets.OCI_REGION }}
+fingerprint=${{ secrets.OCI_FINGERPRINT }}
+key_file=$HOME/.oci/oci_api_key.pem
+EOF
+
+      - name: Build Docker image
+        run: |
+          TAG=${{ github.event.inputs.image_tag }}
+          if [ -z "$TAG" ]; then
+            TAG=${GITHUB_SHA::8}
+          fi
+          IMAGE=${{ secrets.OCI_REGISTRY_DOMAIN }}/${{ secrets.OCI_REPOSITORY_PATH }}:$(echo "$TAG")
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+          docker build -t $IMAGE .
+
+      - name: Login to OCIR (OCI Registry)
+        env:
+          OCIR_USERNAME: ${{ secrets.OCI_USERNAME }}
+          OCIR_AUTH_TOKEN: ${{ secrets.OCI_AUTH_TOKEN }}
+        run: |
+          # OCIR hostname may vary by region/tenancy; use OCI_REGISTRY_DOMAIN secret
+          echo "$OCIR_AUTH_TOKEN" | docker login ${{ secrets.OCI_REGISTRY_DOMAIN }} -u "$OCIR_USERNAME" --password-stdin
+
+      - name: Push image to OCIR
+        run: |
+          docker push $IMAGE
+
+      - name: Deploy (placeholder)
+        run: |
+          echo "Image pushed: $IMAGE"
+          echo "Replace this step with `oci` commands to update your deployment, container instance, or OKE workload."
+          echo "Example: oci ce cluster create/oci artifacts or oci compute instance action..."
