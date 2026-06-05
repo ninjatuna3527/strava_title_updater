@@ -39,7 +39,6 @@ jobs:
           CALLBACK_HOSTNAME: ${{ secrets.CALLBACK_HOSTNAME }}
           BASE_PATH: ${{ secrets.BASE_PATH }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-' "${DEPLOY_SSH_KEY}" | sed 's/^/          /')
         run: |
           mkdir -p deploy/ansible/group_vars
           # Write YAML file; include deploy_ssh_key as a block scalar so newlines are preserved
