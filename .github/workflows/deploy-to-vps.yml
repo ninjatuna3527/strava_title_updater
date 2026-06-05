@@ -53,6 +53,28 @@ jobs:
           # Restart the service. Prefer Supervisor if SUPERVISOR_PROGRAM is provided,
           # otherwise fall back to systemd for backwards compatibility.
           if [ -n "${SUPERVISOR_PROGRAM:-}" ]; then
+            # Generate a Supervisor program config that runs Gunicorn inside the
+            # virtualenv located under the deploy path. This creates or overwrites
+            # /etc/supervisor/conf.d/${SUPERVISOR_PROGRAM}.conf
+            sudo bash -c "cat > /etc/supervisor/conf.d/${SUPERVISOR_PROGRAM}.conf <<SUPCONF
+[program:${SUPERVISOR_PROGRAM}]
+; change 'user' if you need a different runtime user
+directory=${DEPLOY_PATH}
+user=${VPS_USER}
+command=/bin/bash -lc '${DEPLOY_PATH}/venv/bin/gunicorn -w ${GUNICORN_WORKERS:-3} -b 127.0.0.1:5000 wsgi:app --config ${DEPLOY_PATH}/gunicorn.conf.py'
+autostart=true
+autorestart=true
+stopsignal=TERM
+stdout_logfile=/var/log/${SUPERVISOR_PROGRAM}.log
+stderr_logfile=/var/log/${SUPERVISOR_PROGRAM}_err.log
+environment=PATH="${DEPLOY_PATH}/venv/bin:%(ENV_PATH)s"
+priority=999
+SUPCONF"
+
+            # Ensure log files exist and are writable
+            sudo touch /var/log/${SUPERVISOR_PROGRAM}.log /var/log/${SUPERVISOR_PROGRAM}_err.log || true
+            sudo chown ${VPS_USER}:${VPS_USER} /var/log/${SUPERVISOR_PROGRAM}.log /var/log/${SUPERVISOR_PROGRAM}_err.log || true
+
             sudo supervisorctl reread || true
             sudo supervisorctl update || true
             sudo supervisorctl restart ${SUPERVISOR_PROGRAM} || sudo supervisorctl start ${SUPERVISOR_PROGRAM} || true
