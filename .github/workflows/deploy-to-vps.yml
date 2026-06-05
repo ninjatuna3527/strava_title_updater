@@ -13,7 +13,7 @@ jobs:
       VPS_HOST: ${{ secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.VPS_USER }}
       VPS_PORT: ${{ secrets.VPS_PORT }}
-      
+      BASE_PATH: ${{ secrets.BASE_PATH }}
       SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
 
     steps:
@@ -35,6 +35,7 @@ jobs:
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
           CALLBACK_HOSTNAME: ${{ secrets.CALLBACK_HOSTNAME }}
+          BASE_PATH: ${{ secrets.BASE_PATH }}
         run: |
           mkdir -p deploy/ansible/group_vars
           cat > deploy/ansible/group_vars/prod.yml <<EOF
@@ -52,6 +53,7 @@ jobs:
       - name: Run Ansible playbook (prod inventory)
         env:
           SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
+          BASE_PATH: ${{ secrets.BASE_PATH }}
         run: |
           ansible-playbook deploy/ansible/playbook.yml -i deploy/ansible/inventories/prod/inventory \
             --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} repo_branch=main base_path=${BASE_PATH:-/stravaapps}"
