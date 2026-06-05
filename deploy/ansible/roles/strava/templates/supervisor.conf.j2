@@ -1,0 +1,9 @@
+[program:{{ supervisor_program }}]
+command={{ deploy_path }}/venv/bin/gunicorn --chdir {{ deploy_path }} --bind 127.0.0.1:5000 wsgi:app
+directory={{ deploy_path }}
+user={{ ansible_user }}
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/{{ supervisor_program }}_err.log
+stdout_logfile=/var/log/{{ supervisor_program }}.log
+environment=PATH="{{ deploy_path }}/venv/bin:%(ENV_PATH)s"
