@@ -20,18 +20,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
       - name: Install Ansible
         run: |
           python3 -m pip install --upgrade pip
           pip install ansible
-
-      - name: Create Ansible inventory
-        run: |
-          mkdir -p deploy/ansible
-          cat > deploy/ansible/inventory.ini <<INV
-[vps]
-${VPS_HOST} ansible_user=${VPS_USER} ansible_port=${VPS_PORT:-22} ansible_python_interpreter=/usr/bin/python3
-INV
 
       - name: Write group_vars/prod.yml from secrets
         env:
@@ -44,7 +40,7 @@ INV
           cat > deploy/ansible/group_vars/prod.yml <<EOF
           strava_client_id: "${STRAVA_CLIENT_ID}"
           strava_client_secret: "${STRAVA_CLIENT_SECRET}"
-          callback_hostname: "${CALLBACK_HOSTNAME}"
+          callback_hostname: "${CALLBACK_HOSTNAME:-strava.leeson.zone}"
           base_path: "${BASE_PATH:-/stravaapps}"
           EOF
 
