@@ -13,7 +13,7 @@ jobs:
       VPS_HOST: ${{ secrets.VPS_HOST }}
       VPS_USER: ${{ secrets.VPS_USER }}
       VPS_PORT: ${{ secrets.VPS_PORT }}
-      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      
       SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
 
     steps:
@@ -51,7 +51,6 @@ jobs:
 
       - name: Run Ansible playbook (prod inventory)
         env:
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
         run: |
           ansible-playbook deploy/ansible/playbook.yml -i deploy/ansible/inventories/prod/inventory \
