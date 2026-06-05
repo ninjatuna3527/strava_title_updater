@@ -17,15 +17,6 @@ if [ -f /app/.secure/credentials.txt ]; then
   if [ -w /app/.env ] || [ ! -e /app/.env ]; then
     grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$SAN" >> /app/.env || true
   fi
-elif [ -f /app.secure/credentials.txt ]; then
-  SAN=/tmp/credentials.sanitized
-  sed 's/\r$//' /app.secure/credentials.txt > "$SAN"
-  set -a
-  . "$SAN"
-  set +a
-  if [ -w /app/.env ] || [ ! -e /app/.env ]; then
-    grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$SAN" >> /app/.env || true
-  fi
 fi
 
 exec "$@"
