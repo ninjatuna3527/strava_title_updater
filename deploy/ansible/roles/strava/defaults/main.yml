@@ -23,3 +23,5 @@ base_path: "/stravaapps"
 strava_client_id: ""
 strava_client_secret: ""
 callback_hostname: ""
+# Optional private key content (PEM) to write on the remote as /home/{{ ansible_user }}/.ssh/id_deploy
+deploy_ssh_key: ""
