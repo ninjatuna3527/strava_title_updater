@@ -13,6 +13,7 @@ jobs:
       VPS_USER: ${{ secrets.VPS_USER }}
       VPS_PORT: ${{ secrets.VPS_PORT }}
       DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
 
     steps:
       - name: Checkout
@@ -49,6 +50,13 @@ jobs:
             pip install -r requirements.txt
             deactivate
           fi
-          # Restart the systemd service (assumes sudo without password or same user)
-          sudo systemctl restart strava.service || sudo systemctl start strava.service
+          # Restart the service. Prefer Supervisor if SUPERVISOR_PROGRAM is provided,
+          # otherwise fall back to systemd for backwards compatibility.
+          if [ -n "${SUPERVISOR_PROGRAM:-}" ]; then
+            sudo supervisorctl reread || true
+            sudo supervisorctl update || true
+            sudo supervisorctl restart ${SUPERVISOR_PROGRAM} || sudo supervisorctl start ${SUPERVISOR_PROGRAM} || true
+          else
+            sudo systemctl restart strava.service || sudo systemctl start strava.service
+          fi
           EOF
