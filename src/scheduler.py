@@ -8,7 +8,15 @@ not stop the scheduler.
 
 import time
 import os
+from dotenv import load_dotenv
 from .processor import process_new_activities
+
+# Load environment from common locations. In Docker the entrypoint writes a
+# sanitized env file to `/app/.env`; locally `python -m src.app` can use a
+# `.env` in the repo root. load_dotenv is idempotent if variables are already
+# present in the process environment.
+load_dotenv()  # load .env from cwd if present
+load_dotenv('/app/.env')  # load containerized env file when present
 
 
 POLL_INTERVAL = int(os.getenv('POLL_INTERVAL_SECONDS', '3600'))
