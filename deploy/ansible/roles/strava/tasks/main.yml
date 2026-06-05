@@ -27,6 +27,16 @@
     version: "{{ repo_branch }}"
     force: yes
 
+- name: Render application .env file
+  template:
+    src: env.j2
+    dest: "{{ deploy_path }}/.env"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+  no_log: true
+  become: true
+
 - name: Create virtualenv
   command: python3 -m venv {{ deploy_path }}/venv
   args:
