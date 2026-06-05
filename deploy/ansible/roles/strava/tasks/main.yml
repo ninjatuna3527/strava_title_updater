@@ -136,5 +136,4 @@
 
 - name: Restart the application program
   shell: supervisorctl restart {{ supervisor_program }} || supervisorctl start {{ supervisor_program }}
-  args:
-    warn: false
+  warn: false
