@@ -15,7 +15,7 @@ jobs:
       VPS_PORT: ${{ secrets.VPS_PORT }}
       DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
       SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
-      BASE_PATH: ${{ secrets.BASE_PATH }}
+      BASE_PATH: ${{ env.BASE_PATH }}
 
     steps:
       - name: Checkout
