@@ -5,3 +5,10 @@ deploy_path: "/home/{{ ansible_user }}/deployments/strava_chinese_title"
 supervisor_program: "strava_chinese_title"
 repo_url: "https://github.com/ninjatuna3527/strava_title_updater.git"
 repo_branch: "main"
+# Nginx + TLS settings
+nginx_server_name: "localhost"
+enable_tls: false
+# When deploying to localhost, use a self-signed cert if enable_tls is true
+ssl_selfsigned_for_localhost: true
+# Email for Let's Encrypt registration when using real domain TLS
+ssl_contact_email: "admin@example.com"

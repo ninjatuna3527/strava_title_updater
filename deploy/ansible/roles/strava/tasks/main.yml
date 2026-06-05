@@ -3,6 +3,7 @@
   apt:
     name:
       - git
+      - nginx
       - python3-venv
       - python3-pip
       - supervisor
@@ -58,6 +59,66 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0644'
+
+- name: Install certbot if needed
+  apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+  when: enable_tls and nginx_server_name is defined and nginx_server_name != 'localhost'
+
+- name: Generate self-signed cert for localhost when requested
+  command: >-
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048
+    -subj "/CN={{ nginx_server_name }}"
+    -keyout /etc/ssl/private/{{ supervisor_program }}.key
+    -out /etc/ssl/certs/{{ supervisor_program }}.crt
+  args:
+    creates: /etc/ssl/certs/{{ supervisor_program }}.crt
+  when: enable_tls and nginx_server_name == 'localhost' and ssl_selfsigned_for_localhost
+
+- name: Set ssl paths for template
+  set_fact:
+    ssl_cert_path: >-
+      {% if nginx_server_name == 'localhost' and ssl_selfsigned_for_localhost %}
+      /etc/ssl/certs/{{ supervisor_program }}.crt
+      {% else %}
+      /etc/letsencrypt/live/{{ nginx_server_name }}/fullchain.pem
+      {% endif %}
+    ssl_key_path: >-
+      {% if nginx_server_name == 'localhost' and ssl_selfsigned_for_localhost %}
+      /etc/ssl/private/{{ supervisor_program }}.key
+      {% else %}
+      /etc/letsencrypt/live/{{ nginx_server_name }}/privkey.pem
+      {% endif %}
+
+- name: Render Nginx site config
+  template:
+    src: nginx.conf.j2
+    dest: "/etc/nginx/sites-available/{{ supervisor_program }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable Nginx site
+  file:
+    src: "/etc/nginx/sites-available/{{ supervisor_program }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ supervisor_program }}.conf"
+    state: link
+
+- name: Test Nginx configuration
+  command: nginx -t
+
+- name: Reload Nginx
+  service:
+    name: nginx
+    state: reloaded
+
+- name: Obtain Let's Encrypt cert (non-interactive)
+  command: >-
+    certbot --nginx -d {{ nginx_server_name }} --non-interactive --agree-tos -m {{ ssl_contact_email }}
+  when: enable_tls and nginx_server_name is defined and nginx_server_name != 'localhost'
 
 - name: Ensure supervisor service is enabled and running
   service:
