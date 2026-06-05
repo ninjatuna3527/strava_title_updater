@@ -148,6 +148,8 @@
   become: true
 
 - name: Restart the application program
-  shell: supervisorctl restart {{ supervisor_program }} || supervisorctl start {{ supervisor_program }}
-  warn: false
+  shell: |
+    supervisorctl restart {{ supervisor_program }} || supervisorctl start {{ supervisor_program }}
+  args:
+    warn: false
   become: true
