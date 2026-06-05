@@ -47,7 +47,7 @@ jobs:
           strava_client_secret: "${STRAVA_CLIENT_SECRET}"
           callback_hostname: "${CALLBACK_HOSTNAME:-strava.leeson.zone}"
           base_path: "${BASE_PATH:-/stravaapps}"
-          deploy_ssh_key: "${{ deploy_ssh_key }}"
+          deploy_ssh_key: "${DEPLOY_SSH_KEY}"
 
       - name: Add VPS to known_hosts
         run: |
