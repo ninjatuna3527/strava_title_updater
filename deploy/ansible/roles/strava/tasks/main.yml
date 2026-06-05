@@ -20,6 +20,14 @@
     group: "{{ ansible_user }}"
     mode: '0755'
 
+- name: Fail if repository requires SSH key but no `deploy_ssh_key` provided
+  fail:
+    msg: >-
+      The configured `repo_url` appears to require SSH access but no
+      `deploy_ssh_key` was provided. Set `deploy_ssh_key` in group_vars
+      or use an HTTPS-accessible repository URL.
+  when: repo_url is defined and (repo_url.startswith('git@') or repo_url.startswith('ssh://')) and (deploy_ssh_key is not defined or deploy_ssh_key | length == 0)
+
 - name: Ensure remote user's .ssh directory exists
   file:
     path: "/home/{{ ansible_user }}/.ssh"
