@@ -129,7 +129,10 @@
     enabled: yes
 
 - name: Reload supervisor configurations
-  command: supervisorctl reread && supervisorctl update
+  command: supervisorctl reread
+
+- name: Update supervisor and apply changes
+  command: supervisorctl update
 
 - name: Restart the application program
   command: supervisorctl restart {{ supervisor_program }} || supervisorctl start {{ supervisor_program }}
