@@ -50,8 +50,7 @@ jobs:
           deploy_ssh_key: |
           YML
           if [ -n "${DEPLOY_SSH_KEY}" ]; then
-            printf '%s
-' "${DEPLOY_SSH_KEY}" | sed 's/^/          /' >> deploy/ansible/group_vars/prod.yml
+            printf '%s\n' "${DEPLOY_SSH_KEY}" | sed 's/^/          /' >> deploy/ansible/group_vars/prod.yml
           fi
 
       - name: Add VPS to known_hosts
