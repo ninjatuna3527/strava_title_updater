@@ -67,31 +67,32 @@
       - python3-certbot-nginx
     state: present
   when: enable_tls and nginx_server_name is defined and nginx_server_name != 'localhost'
-
-- name: Generate self-signed cert for localhost when requested
-  command: >-
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048
-    -subj "/CN={{ nginx_server_name }}"
-    -keyout /etc/ssl/private/{{ supervisor_program }}.key
-    -out /etc/ssl/certs/{{ supervisor_program }}.crt
-  args:
-    creates: /etc/ssl/certs/{{ supervisor_program }}.crt
-  when: enable_tls and nginx_server_name == 'localhost' and ssl_selfsigned_for_localhost
-
 - name: Set ssl paths for template
   set_fact:
     ssl_cert_path: >-
-      {% if nginx_server_name == 'localhost' and ssl_selfsigned_for_localhost %}
-      /etc/ssl/certs/{{ supervisor_program }}.crt
-      {% else %}
+      {% if ssl_cert_path|length > 0 %}
+      {{ ssl_cert_path }}
+      {% elif nginx_server_name is defined and nginx_server_name != 'localhost' %}
       /etc/letsencrypt/live/{{ nginx_server_name }}/fullchain.pem
+      {% else %}
+      
       {% endif %}
     ssl_key_path: >-
-      {% if nginx_server_name == 'localhost' and ssl_selfsigned_for_localhost %}
-      /etc/ssl/private/{{ supervisor_program }}.key
-      {% else %}
+      {% if ssl_key_path|length > 0 %}
+      {{ ssl_key_path }}
+      {% elif nginx_server_name is defined and nginx_server_name != 'localhost' %}
       /etc/letsencrypt/live/{{ nginx_server_name }}/privkey.pem
+      {% else %}
+      
       {% endif %}
+
+- name: Fail if TLS requested for localhost without provided certs
+  fail:
+    msg: >-
+      TLS is enabled for localhost but no `ssl_cert_path`/`ssl_key_path` were provided.
+      The role does not generate self-signed certificates. For local testing either
+      set `enable_tls: false` or provide actual certificate paths via variables.
+  when: enable_tls and nginx_server_name == 'localhost' and (ssl_cert_path|length == 0 or ssl_key_path|length == 0)
 
 - name: Render Nginx site config
   template:
