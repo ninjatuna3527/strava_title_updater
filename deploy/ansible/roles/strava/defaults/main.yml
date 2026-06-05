@@ -19,6 +19,9 @@ ssl_contact_email: "admin@example.com"
 # Example: "/stravaapps" will make the app available at https://host/stravaapps
 base_path: "/stravaapps"
 
+# ACME webroot for Let's Encrypt HTTP-01 validation
+acme_webroot: "/var/www/letsencrypt"
+
 # Strava API credentials (provide via inventory/group_vars/host_vars or CI secrets)
 strava_client_id: ""
 strava_client_secret: ""

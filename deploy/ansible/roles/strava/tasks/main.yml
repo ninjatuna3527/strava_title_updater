@@ -113,6 +113,16 @@
     state: present
   when: enable_tls and nginx_server_name is defined and nginx_server_name != 'localhost'
   become: true
+
+- name: Ensure ACME webroot exists for HTTP-01 validation
+  file:
+    path: "{{ acme_webroot }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: enable_tls and nginx_server_name is defined and nginx_server_name != 'localhost'
+  become: true
 - name: Set ssl paths for template
   set_fact:
     ssl_cert_path: >-
