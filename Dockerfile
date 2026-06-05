@@ -20,4 +20,4 @@ ENV FLASK_RUN_HOST=0.0.0.0
 EXPOSE 5000
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["python", "-m", "src.app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "wsgi:app"]
