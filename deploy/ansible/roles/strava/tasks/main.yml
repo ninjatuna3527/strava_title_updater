@@ -10,14 +10,6 @@
     state: present
     update_cache: yes
 
-- name: Ensure 'strava' system user exists with home directory
-  user:
-    name: strava
-    comment: "Strava application deploy user"
-    shell: /bin/bash
-    create_home: yes
-    home: /home/strava
-    state: present
 
 - name: Ensure deploy directory exists
   file:
