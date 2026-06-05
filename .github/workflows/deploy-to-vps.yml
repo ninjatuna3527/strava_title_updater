@@ -47,11 +47,7 @@ jobs:
           strava_client_secret: "${STRAVA_CLIENT_SECRET}"
           callback_hostname: "${CALLBACK_HOSTNAME:-strava.leeson.zone}"
           base_path: "${BASE_PATH:-/stravaapps}"
-          deploy_ssh_key: |
-          YML
-          if [ -n "${DEPLOY_SSH_KEY}" ]; then
-            printf '%s\n' "${DEPLOY_SSH_KEY}" | sed 's/^/          /' >> deploy/ansible/group_vars/prod.yml
-          fi
+          deploy_ssh_key: "${{ deploy_ssh_key }}"
 
       - name: Add VPS to known_hosts
         run: |
