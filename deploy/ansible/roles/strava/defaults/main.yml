@@ -1,0 +1,7 @@
+---
+# Role defaults for deploying the Strava Title Updater
+# The deploy_path uses the remote user's home directory by default.
+deploy_path: "/home/{{ ansible_user }}/deployments/strava_chinese_title"
+supervisor_program: "strava_chinese_title"
+repo_url: "https://github.com/ninjatuna3527/strava_title_updater.git"
+repo_branch: "main"
