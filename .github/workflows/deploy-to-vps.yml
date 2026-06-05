@@ -33,20 +33,26 @@ jobs:
 ${VPS_HOST} ansible_user=${VPS_USER} ansible_port=${VPS_PORT:-22} ansible_python_interpreter=/usr/bin/python3
 INV
 
-      - name: Run Ansible playbook
+      - name: Write group_vars/prod.yml from secrets
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          CALLBACK_HOSTNAME: ${{ secrets.CALLBACK_HOSTNAME }}
+          BASE_PATH: ${{ secrets.BASE_PATH }}
+        run: |
+          mkdir -p deploy/ansible/group_vars
+          cat > deploy/ansible/group_vars/prod.yml <<EOF
+          strava_client_id: "${STRAVA_CLIENT_ID}"
+          strava_client_secret: "${STRAVA_CLIENT_SECRET}"
+          callback_hostname: "${CALLBACK_HOSTNAME}"
+          base_path: "${BASE_PATH:-/stravaapps}"
+          EOF
+
+      - name: Run Ansible playbook (prod inventory)
         env:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
+          BASE_PATH: ${{ secrets.BASE_PATH }}
         run: |
-          ansible-playbook deploy/ansible/playbook.yml -i deploy/ansible/inventory.ini \
-            --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} repo_branch=main"
-            sudo touch /var/log/${SUPERVISOR_PROGRAM}.log /var/log/${SUPERVISOR_PROGRAM}_err.log || true
-            sudo chown ${VPS_USER}:${VPS_USER} /var/log/${SUPERVISOR_PROGRAM}.log /var/log/${SUPERVISOR_PROGRAM}_err.log || true
-
-            sudo supervisorctl reread || true
-            sudo supervisorctl update || true
-            sudo supervisorctl restart ${SUPERVISOR_PROGRAM} || sudo supervisorctl start ${SUPERVISOR_PROGRAM} || true
-          else
-            sudo systemctl restart strava.service || sudo systemctl start strava.service
-          fi
-          EOF
+          ansible-playbook deploy/ansible/playbook.yml -i deploy/ansible/inventories/prod/inventory \
+            --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} repo_branch=main base_path=${BASE_PATH:-/stravaapps}"
