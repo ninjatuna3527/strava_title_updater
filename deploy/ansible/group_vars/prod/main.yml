@@ -1,4 +1,4 @@
 ---
-nginx_server_name: "strava.leeson.zone"
+nginx_server_name: "{{ callback_hostname }}"
 enable_tls: true
 ssl_contact_email: "richard@leeson.zone"

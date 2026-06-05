@@ -1,2 +1,5 @@
+[prod:children]
+vps
+
 [vps]
 strava.leeson.zone ansible_user=ubuntu ansible_port=22 ansible_python_interpreter=/usr/bin/python3

@@ -45,6 +45,11 @@ jobs:
           base_path: "${BASE_PATH:-/stravaapps}"
           EOF
 
+      - name: Add VPS to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
       - name: Run Ansible playbook (prod inventory)
         env:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}

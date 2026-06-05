@@ -67,3 +67,21 @@ def test_list_and_update(monkeypatch, tmp_path):
         mock_put.return_value = DummyResp({'id': 1})
         res = client.update_activity_name(1, 'name')
         assert res['id'] == 1
+
+
+def test_callback_hostname_override(monkeypatch):
+    """When CALLBACK_HOSTNAME and CALLBACK_SCHEME are set, /authorize should
+    build a redirect_uri using them instead of BASE_URL."""
+    # ensure Flask app uses our env
+    monkeypatch.setenv('STRAVA_CLIENT_ID', '22030')
+    monkeypatch.setenv('STRAVA_CLIENT_SECRET', 'secret')
+    monkeypatch.setenv('CALLBACK_HOSTNAME', 'app.example.com')
+    monkeypatch.setenv('CALLBACK_SCHEME', 'https')
+
+    from src import app as _app_mod
+    _app_mod.app.config['TESTING'] = True
+    client = _app_mod.app.test_client()
+    resp = client.get('/authorize', follow_redirects=False)
+    assert resp.status_code in (301, 302)
+    loc = resp.headers.get('Location', '')
+    assert 'https://app.example.com/callback' in loc
