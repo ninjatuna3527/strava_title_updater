@@ -129,7 +129,7 @@
       {% if ssl_cert_path|length > 0 %}
       {{ ssl_cert_path }}
       {% elif nginx_server_name is defined and nginx_server_name != 'localhost' %}
-      /etc/letsencrypt/live/{{ nginx_server_name }}/fullchain.pem
+      /etc/letsencrypt/live/strava.leeson.zone/fullchain.pem
       {% else %}
       
       {% endif %}
@@ -137,7 +137,7 @@
       {% if ssl_key_path|length > 0 %}
       {{ ssl_key_path }}
       {% elif nginx_server_name is defined and nginx_server_name != 'localhost' %}
-      /etc/letsencrypt/live/{{ nginx_server_name }}/privkey.pem
+      /etc/letsencrypt/live/strava.leeson.zone/privkey.pem
       {% else %}
       
       {% endif %}
@@ -178,7 +178,7 @@
 
 - name: Obtain Let's Encrypt cert (non-interactive)
   command: >-
-    certbot --nginx -d {{ nginx_server_name }} --non-interactive --agree-tos -m {{ ssl_contact_email }}
+    certbot --nginx -d strava.leeson.zone --non-interactive --agree-tos -m {{ ssl_contact_email }}
   when: enable_tls and nginx_server_name is defined and nginx_server_name != 'localhost'
   become: true
 
