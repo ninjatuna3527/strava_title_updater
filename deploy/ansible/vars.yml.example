@@ -1,0 +1,6 @@
+---
+# Example variables for the Ansible playbook
+repo_url: "https://github.com/ninjatuna3527/strava_title_updater.git"
+repo_branch: main
+deploy_path: /srv/strava_title_updater
+supervisor_program: strava
