@@ -26,41 +26,9 @@ if [ -f /run/secrets/STRAVA_CLIENT_SECRET ]; then
   echo "STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET}" >> /app/.env || true
 fi
 
-# Load SSL cert/key secrets (optional). Look for combined secret or individual files.
-if [ -f /run/secrets/app_ssl_cert ] && [ -f /run/secrets/app_ssl_key ]; then
-  mkdir -p /app/ssl
-  sed 's/\r$//' /run/secrets/app_ssl_cert > /app/ssl/cert.pem
-  sed 's/\r$//' /run/secrets/app_ssl_key > /app/ssl/key.pem
-  chmod 600 /app/ssl/key.pem || true
-  export SSL_CERTFILE=/app/ssl/cert.pem
-  export SSL_KEYFILE=/app/ssl/key.pem
-  echo "SSL_CERTFILE=${SSL_CERTFILE}" >> /app/.env || true
-  echo "SSL_KEYFILE=${SSL_KEYFILE}" >> /app/.env || true
-fi
-
-# Backwards compatible names
-if [ -f /run/secrets/strava_ssl_cert ] && [ -f /run/secrets/strava_ssl_key ]; then
-  mkdir -p /app/ssl
-  sed 's/\r$//' /run/secrets/strava_ssl_cert > /app/ssl/cert.pem
-  sed 's/\r$//' /run/secrets/strava_ssl_key > /app/ssl/key.pem
-  chmod 600 /app/ssl/key.pem || true
-  export SSL_CERTFILE=/app/ssl/cert.pem
-  export SSL_KEYFILE=/app/ssl/key.pem
-  echo "SSL_CERTFILE=${SSL_CERTFILE}" >> /app/.env || true
-  echo "SSL_KEYFILE=${SSL_KEYFILE}" >> /app/.env || true
-fi
-
-# Also support generic names for other deployments
-if [ -f /run/secrets/ssl_cert ] && [ -f /run/secrets/ssl_key ]; then
-  mkdir -p /app/ssl
-  sed 's/\r$//' /run/secrets/ssl_cert > /app/ssl/cert.pem
-  sed 's/\r$//' /run/secrets/ssl_key > /app/ssl/key.pem
-  chmod 600 /app/ssl/key.pem || true
-  export SSL_CERTFILE=/app/ssl/cert.pem
-  export SSL_KEYFILE=/app/ssl/key.pem
-  echo "SSL_CERTFILE=${SSL_CERTFILE}" >> /app/.env || true
-  echo "SSL_KEYFILE=${SSL_KEYFILE}" >> /app/.env || true
-fi
+# SSL/TLS certificate handling removed: TLS is expected to be terminated by
+# the reverse proxy (Nginx). Do not set SSL_CERTFILE/SSL_KEYFILE in this
+# container; manage certificates at the proxy level.
 
 # If credentials file exists, source it and export vars.
 # Prefer /app/.secure/credentials.txt (directory mount).
