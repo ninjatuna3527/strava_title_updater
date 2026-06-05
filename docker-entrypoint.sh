@@ -27,6 +27,18 @@ if [ -f /run/secrets/STRAVA_CLIENT_SECRET ]; then
 fi
 
 # Load SSL cert/key secrets (optional). Look for combined secret or individual files.
+if [ -f /run/secrets/app_ssl_cert ] && [ -f /run/secrets/app_ssl_key ]; then
+  mkdir -p /app/ssl
+  sed 's/\r$//' /run/secrets/app_ssl_cert > /app/ssl/cert.pem
+  sed 's/\r$//' /run/secrets/app_ssl_key > /app/ssl/key.pem
+  chmod 600 /app/ssl/key.pem || true
+  export SSL_CERTFILE=/app/ssl/cert.pem
+  export SSL_KEYFILE=/app/ssl/key.pem
+  echo "SSL_CERTFILE=${SSL_CERTFILE}" >> /app/.env || true
+  echo "SSL_KEYFILE=${SSL_KEYFILE}" >> /app/.env || true
+fi
+
+# Backwards compatible names
 if [ -f /run/secrets/strava_ssl_cert ] && [ -f /run/secrets/strava_ssl_key ]; then
   mkdir -p /app/ssl
   sed 's/\r$//' /run/secrets/strava_ssl_cert > /app/ssl/cert.pem
@@ -38,6 +50,7 @@ if [ -f /run/secrets/strava_ssl_cert ] && [ -f /run/secrets/strava_ssl_key ]; th
   echo "SSL_KEYFILE=${SSL_KEYFILE}" >> /app/.env || true
 fi
 
+# Also support generic names for other deployments
 if [ -f /run/secrets/ssl_cert ] && [ -f /run/secrets/ssl_key ]; then
   mkdir -p /app/ssl
   sed 's/\r$//' /run/secrets/ssl_cert > /app/ssl/cert.pem
