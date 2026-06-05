@@ -97,6 +97,28 @@ mkdir .secure
 if (-not (Test-Path ./.secure/strava.db)) { New-Item -Path ./.secure/strava.db -ItemType File }
 ```
 
+Using Docker secrets
+--------------------
+
+For production deployments you can use Docker secrets (Swarm or compatible
+runtimes) instead of mounting files. This repo declares a `strava_credentials`
+secret in `docker-compose.yml` that points to `./.secure/credentials.txt` for
+local testing. When provided, Docker places the secret at `/run/secrets/strava_credentials`
+inside the container and the entrypoint will source it the same way as the
+mounted file.
+
+You can also provide individual secret files named `/run/secrets/STRAVA_CLIENT_ID`
+and `/run/secrets/STRAVA_CLIENT_SECRET` and the entrypoint will export them
+to the environment.
+
+Example (Swarm secret create):
+
+```bash
+docker secret create strava_credentials ./.secure/credentials.txt
+docker stack deploy -c docker-compose.yml strava
+```
+
+
 Scheduler / periodic processing
 
 - Default cutoff date: activities before `2026-06-05` are not updated. Configure with `NOT_BEFORE_DATE=YYYY-MM-DD`.

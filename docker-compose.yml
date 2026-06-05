@@ -1,4 +1,7 @@
 version: '3.8'
+secrets:
+  strava_credentials:
+    file: ./.secure/credentials.txt
 services:
   app:
     build: .
@@ -13,6 +16,8 @@ services:
       - BASE_URL=${BASE_URL:-http://localhost:5000}
     env_file:
       - ./.secure/credentials.txt
+    secrets:
+      - strava_credentials
     volumes:
       - ./.secure/strava.db:/data/strava.db
       - ./.secure:/app/.secure:ro
@@ -32,6 +37,8 @@ services:
       - GUNICORN_WORKERS=${GUNICORN_WORKERS:-4}
     env_file:
       - ./.secure/credentials.txt
+    secrets:
+      - strava_credentials
     volumes:
       - ./.secure/strava.db:/data/strava.db
       - ./.secure:/app/.secure:ro

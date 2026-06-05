@@ -1,8 +1,33 @@
 #!/bin/sh
 set -e
 
+# Load credentials from Docker secrets when available. Docker places secrets
+# at /run/secrets/<name>. Support both a combined secret file named
+# `strava_credentials` (containing KEY=VALUE lines) and individual secrets
+# `STRAVA_CLIENT_ID` / `STRAVA_CLIENT_SECRET` as separate files.
+if [ -f /run/secrets/strava_credentials ]; then
+  SAN=/tmp/credentials.sanitized
+  sed 's/\r$//' /run/secrets/strava_credentials > "$SAN"
+  set -a
+  . "$SAN"
+  set +a
+  if [ -w /app/.env ] || [ ! -e /app/.env ]; then
+    grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$SAN" >> /app/.env || true
+  fi
+fi
+
+# Load individual secret files if present
+if [ -f /run/secrets/STRAVA_CLIENT_ID ]; then
+  export STRAVA_CLIENT_ID=$(sed 's/\r$//' /run/secrets/STRAVA_CLIENT_ID)
+  echo "STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID}" >> /app/.env || true
+fi
+if [ -f /run/secrets/STRAVA_CLIENT_SECRET ]; then
+  export STRAVA_CLIENT_SECRET=$(sed 's/\r$//' /run/secrets/STRAVA_CLIENT_SECRET)
+  echo "STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET}" >> /app/.env || true
+fi
+
 # If credentials file exists, source it and export vars.
-# Prefer /app/.secure/credentials.txt (directory mount), but keep compatibility
+# Prefer /app/.secure/credentials.txt (directory mount).
 # with the previous /app.secure/credentials.txt path.
 if [ -f /app/.secure/credentials.txt ]; then
   # sanitize CRLF and comments, export variables, and append safe lines to /app/.env
@@ -18,8 +43,6 @@ if [ -f /app/.secure/credentials.txt ]; then
     grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$SAN" >> /app/.env || true
   fi
 fi
-
-exec "$@"
 
 # If GUNICORN_WORKERS is not set, compute a sensible default: (2 * CPU) + 1
 if [ -z "$GUNICORN_WORKERS" ]; then
