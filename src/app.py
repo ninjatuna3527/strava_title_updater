@@ -22,7 +22,12 @@ load_dotenv()
 DB_PATH = os.getenv('DB_PATH', './data/strava.db')
 CLIENT_ID = os.getenv('STRAVA_CLIENT_ID')
 CLIENT_SECRET = os.getenv('STRAVA_CLIENT_SECRET')
+# BASE_URL is a full URL used as a fallback. Prefer configuring a hostname
+# via CALLBACK_HOSTNAME for environments where the public host differs from
+# the container's perceived host (load balancers, proxies, etc.).
 BASE_URL = os.getenv('BASE_URL', 'http://localhost:5000')
+CALLBACK_HOSTNAME = os.getenv('CALLBACK_HOSTNAME')
+CALLBACK_SCHEME = os.getenv('CALLBACK_SCHEME')
 
 # Ensure Flask finds the top-level `templates/` directory when running as a module
 root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -48,7 +53,14 @@ def authorize():
         return 'Set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET in .env and restart.'
     state = secrets.token_urlsafe(16)
     session['oauth_state'] = state
-    redirect_uri = f"{BASE_URL}/callback"
+    # Allow overriding the public callback host (useful behind proxies/load
+    # balancers). If CALLBACK_HOSTNAME is set, build redirect_uri from it and
+    # optional CALLBACK_SCHEME; otherwise fall back to BASE_URL.
+    if CALLBACK_HOSTNAME:
+        scheme = CALLBACK_SCHEME or ('https' if BASE_URL.startswith('https') else 'http')
+        redirect_uri = f"{scheme}://{CALLBACK_HOSTNAME}/callback"
+    else:
+        redirect_uri = f"{BASE_URL}/callback"
     url = (
         f"https://www.strava.com/oauth/authorize?client_id={CLIENT_ID}"
         f"&response_type=code&redirect_uri={redirect_uri}&approval_prompt=force&scope=activity:write,activity:read_all"

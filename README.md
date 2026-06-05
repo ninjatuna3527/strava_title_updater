@@ -118,6 +118,23 @@ docker secret create strava_credentials ./.secure/credentials.txt
 docker stack deploy -c docker-compose.yml strava
 ```
 
+Configuring callback hostname
+------------------------------
+
+If your public host differs from the container `BASE_URL` (for example when
+running behind a load balancer or reverse proxy), set `CALLBACK_HOSTNAME` to
+your public host so the OAuth redirect URI is built correctly. Optionally set
+`CALLBACK_SCHEME` (`http` or `https`) — if unset the app will infer the
+scheme from `BASE_URL`.
+
+Example (in `.env`):
+
+```
+CALLBACK_HOSTNAME=app.example.com
+CALLBACK_SCHEME=https
+```
+
+
 
 Scheduler / periodic processing
 
