@@ -1,10 +1,22 @@
+"""Process new Strava activities and rename them.
+
+This module contains the core business logic executed by the worker:
+- read the last processed timestamp from `meta.last_processed`
+- list new activities via the Strava API
+- skip activities older than `NOT_BEFORE_DATE`
+- rename remaining activities to a random Chinese title
+
+Functions accept `db_path`/credentials so tests can call the logic in
+isolation without relying on environment variables.
+"""
+
 import time
 from datetime import datetime, timezone
-import requests
 from . import db
 from .strava_client import StravaClient
 from .chinese import random_chinese
 import os
+
 
 DB_PATH = os.getenv('DB_PATH', './data/strava.db')
 CLIENT_ID = os.getenv('STRAVA_CLIENT_ID')
@@ -18,6 +30,16 @@ except Exception:
 
 
 def process_new_activities(db_path: str = None, client_id: str = None, client_secret: str = None):
+    """Process activities and return a tuple (updated, skipped).
+
+    Args:
+        db_path: path to the SQLite database.
+        client_id: Strava client id override (for tests).
+        client_secret: Strava client secret override (for tests).
+
+    Returns:
+        (updated_count, skipped_count)
+    """
     db_path = db_path or DB_PATH
     client_id = client_id or CLIENT_ID
     client_secret = client_secret or CLIENT_SECRET
@@ -35,12 +57,10 @@ def process_new_activities(db_path: str = None, client_id: str = None, client_se
     updated = 0
     skipped = 0
     for act in activities:
-        # start_date may be present as ISO string
+        # start_date may be present as ISO string like 2026-06-05T12:34:56Z
         ts = None
         if 'start_date' in act:
             try:
-                # Strava returns UTC Z timestamps like 2026-06-05T12:34:56Z
-                # parse to UTC timestamp
                 dt = datetime.strptime(act['start_date'], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
                 ts = int(dt.timestamp())
             except Exception:
@@ -49,6 +69,7 @@ def process_new_activities(db_path: str = None, client_id: str = None, client_se
             max_ts = ts
         # skip activities before NOT_BEFORE date
         if ts is None or ts < NOT_BEFORE_TS:
+            # log and continue; skipping is expected for old activities
             print(f"Skipping {act.get('id')} - before not-before date ({NOT_BEFORE})")
             skipped += 1
             continue
@@ -57,6 +78,7 @@ def process_new_activities(db_path: str = None, client_id: str = None, client_se
             client.update_activity_name(act['id'], title)
             updated += 1
         except Exception:
+            # network or API errors should not stop processing other activities
             continue
     if max_ts:
         db.set_meta(db_path, 'last_processed', str(max_ts))

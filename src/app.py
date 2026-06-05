@@ -1,16 +1,23 @@
+"""Flask web application providing OAuth flow and health endpoints.
+
+The module exposes a small web UI to initiate the Strava OAuth flow and
+contains `/health` and `/ready` endpoints suitable for container orchestration
+health checks. The CLI also supports a `process` command to run the
+processing step once (useful for debugging).
+"""
+
 import os
 import sys
-import time
 from flask import Flask, redirect, request, render_template, session
 from dotenv import load_dotenv
 from . import db
 from .strava_client import StravaClient
-from .chinese import random_chinese
 from .processor import process_new_activities
-import os
 import secrets
 
+
 load_dotenv()
+
 
 DB_PATH = os.getenv('DB_PATH', './data/strava.db')
 CLIENT_ID = os.getenv('STRAVA_CLIENT_ID')
@@ -24,15 +31,21 @@ app = Flask(__name__, template_folder=templates_dir)
 # secret key for session; prefer setting via FLASK_SECRET_KEY in environment
 app.secret_key = os.getenv('FLASK_SECRET_KEY') or secrets.token_urlsafe(32)
 
+
 @app.route('/')
 def index():
+    """Render the small landing page that starts OAuth."""
     return render_template('login.html')
+
 
 @app.route('/authorize')
 def authorize():
+    """Redirect the user to the Strava authorization URL.
+
+    A random `state` token is stored in the Flask session to mitigate CSRF.
+    """
     if not CLIENT_ID:
         return 'Set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET in .env and restart.'
-    # generate and store OAuth state to protect against CSRF
     state = secrets.token_urlsafe(16)
     session['oauth_state'] = state
     redirect_uri = f"{BASE_URL}/callback"
@@ -43,13 +56,14 @@ def authorize():
     )
     return redirect(url)
 
+
 @app.route('/callback')
 def callback():
+    """Handle the OAuth callback and exchange the code for tokens."""
     code = request.args.get('code')
     state = request.args.get('state')
     if not code:
         return 'Authorization failed or denied.'
-    # verify state matches
     saved = session.get('oauth_state')
     if not saved or state != saved:
         return ('Invalid or missing OAuth state', 400)
@@ -60,14 +74,14 @@ def callback():
 
 @app.route('/health')
 def health():
-    # basic health: can we access the DB (file exists)
+    """Liveness probe: checks whether the DB file exists."""
     db_exists = os.path.exists(DB_PATH)
     return ('OK' if db_exists else 'DB MISSING', 200 if db_exists else 500)
 
 
 @app.route('/ready')
 def ready():
-    # readiness: DB exists and tokens present
+    """Readiness probe: DB exists and tokens are present."""
     if not os.path.exists(DB_PATH):
         return ('DB MISSING', 500)
     tokens = db.get_tokens(DB_PATH)
