@@ -39,18 +39,21 @@ jobs:
           CALLBACK_HOSTNAME: ${{ secrets.CALLBACK_HOSTNAME }}
           BASE_PATH: ${{ secrets.BASE_PATH }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+' "${DEPLOY_SSH_KEY}" | sed 's/^/          /')
         run: |
           mkdir -p deploy/ansible/group_vars
           # Write YAML file; include deploy_ssh_key as a block scalar so newlines are preserved
-          cat > deploy/ansible/group_vars/prod.yml <<'YML'
+          cat > deploy/ansible/group_vars/prod.yml <<YML
           strava_client_id: "${STRAVA_CLIENT_ID}"
           strava_client_secret: "${STRAVA_CLIENT_SECRET}"
           callback_hostname: "${CALLBACK_HOSTNAME:-strava.leeson.zone}"
           base_path: "${BASE_PATH:-/stravaapps}"
           deploy_ssh_key: |
-$(printf '%s
-' "${DEPLOY_SSH_KEY}" | sed 's/^/          /')
           YML
+          if [ -n "${DEPLOY_SSH_KEY}" ]; then
+            printf '%s
+' "${DEPLOY_SSH_KEY}" | sed 's/^/          /' >> deploy/ansible/group_vars/prod.yml
+          fi
 
       - name: Add VPS to known_hosts
         run: |
