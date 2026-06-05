@@ -147,7 +147,7 @@
   command: supervisorctl update
   become: true
 
- - name: Try to restart the application program
+- name: Try to restart the application program
   command: supervisorctl restart {{ supervisor_program }}
   register: supervisor_restart
   ignore_errors: true
