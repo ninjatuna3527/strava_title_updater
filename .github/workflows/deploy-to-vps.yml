@@ -41,14 +41,18 @@ jobs:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           mkdir -p deploy/ansible/group_vars
-          # Write YAML file; include deploy_ssh_key as a block scalar so newlines are preserved
+          # Write YAML file; include deploy_ssh_key as a block scalar and append key lines
           cat > deploy/ansible/group_vars/prod.yml <<YML
           strava_client_id: "${STRAVA_CLIENT_ID}"
           strava_client_secret: "${STRAVA_CLIENT_SECRET}"
           callback_hostname: "${CALLBACK_HOSTNAME:-strava.leeson.zone}"
           base_path: "${BASE_PATH:-/stravaapps}"
-          deploy_ssh_key: "${DEPLOY_SSH_KEY}"
+          deploy_ssh_key: |
           YML
+
+          if [ -n "${DEPLOY_SSH_KEY}" ]; then
+            printf '%s\n' "${DEPLOY_SSH_KEY}" | sed 's/^/  /' >> deploy/ansible/group_vars/prod.yml
+          fi
 
       - name: Add VPS to known_hosts
         run: |

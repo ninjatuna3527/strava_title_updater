@@ -1,5 +1,14 @@
 import os
 
+from dotenv import load_dotenv, find_dotenv
+import logging, os
+
+logging.basicConfig(level=logging.INFO)
+
+path = find_dotenv()
+loaded = load_dotenv(path)
+
+logging.info("dotenv path=%s loaded=%s cwd=%s", path, loaded, os.getcwd())
 # Gunicorn configuration file. Values can be tuned via environment variables.
 
 # Number of worker processes. Default 4.
