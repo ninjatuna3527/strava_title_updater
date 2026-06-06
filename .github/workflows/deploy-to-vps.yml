@@ -32,28 +32,6 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install ansible
 
-      - name: Write group_vars/prod.yml from secrets
-        env:
-          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
-          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
-          CALLBACK_HOSTNAME: ${{ secrets.CALLBACK_HOSTNAME }}
-          BASE_PATH: ${{ secrets.BASE_PATH }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-        run: |
-          mkdir -p deploy/ansible/group_vars
-          # Write YAML file; include deploy_ssh_key as a block scalar and append key lines
-          cat > deploy/ansible/group_vars/prod.yml <<YML
-          strava_client_id: "${STRAVA_CLIENT_ID}"
-          strava_client_secret: "${STRAVA_CLIENT_SECRET}"
-          callback_hostname: "${CALLBACK_HOSTNAME:-strava.leeson.zone}"
-          base_path: "${BASE_PATH:-/stravaapps}"
-          deploy_ssh_key: |
-          YML
-
-          if [ -n "${DEPLOY_SSH_KEY}" ]; then
-            printf '%s\n' "${DEPLOY_SSH_KEY}" | sed 's/^/  /' >> deploy/ansible/group_vars/prod.yml
-          fi
-
       - name: Add VPS to known_hosts
         run: |
           mkdir -p ~/.ssh
@@ -64,6 +42,10 @@ jobs:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
           BASE_PATH: ${{ secrets.BASE_PATH }}
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          CALLBACK_HOSTNAME: ${{ secrets.CALLBACK_HOSTNAME }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
           ansible-playbook deploy/ansible/playbook.yml -i deploy/ansible/inventories/prod/inventory \
             --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} repo_branch=main base_path=${BASE_PATH:-/stravaapps}"
