@@ -28,7 +28,11 @@ templates_dir = os.path.join(root_dir, 'templates')
 app = Flask(__name__, template_folder=templates_dir)
 # secret key for session; prefer setting via FLASK_SECRET_KEY in environment
 app.secret_key = os.getenv('FLASK_SECRET_KEY') or secrets.token_urlsafe(32)
-
+app.config.update(
+    SESSION_COOKIE_PATH=f"{BASE_PATH}",
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
 @app.context_processor
 def inject_base_path():
     """Expose `BASE_PATH` to templates so links can include the prefix."""

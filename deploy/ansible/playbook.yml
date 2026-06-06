@@ -1,7 +1,6 @@
 ---
 - name: Deploy Strava Title Updater
   hosts: vps
-  become: yes
   roles:
     - role: strava
       vars:
@@ -12,3 +11,4 @@
         base_path: "{{ lookup('env', 'BASE_PATH') }}"
         callback_hostname: "{{ lookup('env', 'CALLBACK_HOSTNAME') }}"
         deploy_ssh_key: "{{ lookup('env', 'DEPLOY_SSH_KEY') }}"
+        flask_secret_key: "{{ lookup('env', 'FLASK_SECRET_KEY') }}"

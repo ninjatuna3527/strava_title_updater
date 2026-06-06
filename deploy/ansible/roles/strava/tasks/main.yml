@@ -35,7 +35,6 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0700'
-  become: true
 
 - name: Install deploy SSH key (optional)
   copy:
@@ -46,7 +45,6 @@
     mode: '0600'
   when: deploy_ssh_key is defined and deploy_ssh_key | length > 0
   no_log: true
-  become: true
 
 - name: Checkout repository
   git:
@@ -65,7 +63,6 @@
     group: "{{ ansible_user }}"
     mode: '0600'
   no_log: true
-  become: true
 
 - name: Create virtualenv
   command: python3 -m venv {{ deploy_path }}/venv
