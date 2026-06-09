@@ -77,6 +77,7 @@ def test_callback_hostname_override(monkeypatch):
     monkeypatch.setenv('STRAVA_CLIENT_SECRET', 'secret')
     monkeypatch.setenv('CALLBACK_HOSTNAME', 'app.example.com')
     monkeypatch.setenv('CALLBACK_SCHEME', 'https')
+    monkeypatch.setenv('BASE_PATH', '')
 
     from src import app as _app_mod
     _app_mod.app.config['TESTING'] = True

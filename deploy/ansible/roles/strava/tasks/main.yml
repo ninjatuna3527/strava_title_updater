@@ -51,11 +51,12 @@
     repo: "{{ repo_url }}"
     dest: "{{ deploy_path }}"
     version: "{{ repo_branch }}"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
     force: yes
     accept_hostkey: yes
     key_file: "/home/{{ ansible_user }}/.ssh/id_deploy"
+  become: true
+  become_user: "{{ ansible_user }}"
+
 
 - name: Render application .env file
   template:
