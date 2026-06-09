@@ -19,7 +19,7 @@ jobs:
       SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
 
     steps:
-      - name: Checkoutv
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup SSH agent
