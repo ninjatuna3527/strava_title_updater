@@ -4,7 +4,7 @@ This module contains the core business logic executed by the worker:
 - read the last processed timestamp from `meta.last_processed`
 - list new activities via the Strava API
 - skip activities older than `NOT_BEFORE_DATE`
-- rename remaining activities with an AI-generated title when configured
+- rename remaining activities to a random Chinese title
 
 Functions accept `db_path`/credentials so tests can call the logic in
 isolation without relying on environment variables.
@@ -15,7 +15,6 @@ from datetime import datetime, timezone
 from . import db
 from .strava_client import StravaClient
 from .chinese import random_chinese
-from .ai_titles import AITitleError, generate_ai_title
 import os
 
 
@@ -70,15 +69,6 @@ def process_new_activities(db_path: str = None, client_id: str = None, client_se
             skipped += 1
             continue
         title = random_chinese(6)
-        if os.getenv('OPENAI_API_KEY'):
-            try:
-                title = generate_ai_title(
-                    act.get('type') or act.get('sport_type') or 'Activity',
-                    act.get('elapsed_time', 0),
-                    act.get('distance', 0),
-                )
-            except AITitleError as exc:
-                print(f"AI title generation failed for {act.get('id')}: {exc}")
         try:
             client.update_activity_name(act['id'], title)
             updated += 1

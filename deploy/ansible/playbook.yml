@@ -8,8 +8,6 @@
         repo_branch: "main"
         strava_client_id: "{{ lookup('env', 'STRAVA_CLIENT_ID') }}"
         strava_client_secret: "{{ lookup('env', 'STRAVA_CLIENT_SECRET') }}"
-        openai_api_key: "{{ lookup('env', 'OPENAI_API_KEY') }}"
-        openai_model: "{{ lookup('env', 'OPENAI_MODEL') | default('gpt-5.2', true) }}"
         base_path: "{{ lookup('env', 'BASE_PATH') }}"
         callback_hostname: "{{ lookup('env', 'CALLBACK_HOSTNAME') }}"
         deploy_ssh_key: "{{ lookup('env', 'DEPLOY_SSH_KEY') }}"

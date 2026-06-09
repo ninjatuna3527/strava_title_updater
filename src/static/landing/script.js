@@ -1,16 +1,18 @@
 const titles = [
-  "My Legs Filed a Complaint",
-  "Blamed It on the Headwind",
-  "Recovery Pace, Emotionally",
-  "GPS Added the Slow Bits",
-  "Carbs Were Still Loading",
-  "Training for a Longer Nap",
-  "The Hill Started It",
-  "Saving My Speed for Next Time",
-  "Shoelaces Were Holding Me Back",
-  "Aerodynamic in Theory",
-  "Tapering Since Breakfast",
-  "The Route Looked Flatter Online"
+  "雲中疾行",
+  "夜雨疾馳",
+  "山風未息",
+  "孤月長跑",
+  "晨霧破風",
+  "龍脈上升",
+  "竹影慢行",
+  "雲海歸途",
+  "赤日遠征",
+  "寒星踏步",
+  "松下疾影",
+  "白鶴越嶺",
+  "雨後登峰",
+  "火雲追風"
 ];
 
 const sampleTitle = document.querySelector("#sample-title");
