@@ -57,7 +57,7 @@ def authorize():
         return 'Set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET in .env and restart.'
     if not CALLBACK_HOSTNAME:
         return 'Set CALLBACK_HOSTNAME in .env to the public hostname of this app (e.g. myapp.example.com) and restart.'
-    if not BASE_PATH:
+    if BASE_PATH is None:
         return 'Set BASE_PATH in .env to the base path this app is served under (e.g. /stravaapps) and restart.'
     state = secrets.token_urlsafe(16)
     session['oauth_state'] = state
