@@ -26,6 +26,8 @@ acme_webroot: "/var/www/letsencrypt"
 # Strava API credentials (provide via inventory/group_vars/host_vars or CI secrets)
 strava_client_id: ""
 strava_client_secret: ""
+openai_api_key: ""
+openai_model: "gpt-5.2"
 callback_hostname: ""
 # Optional private key content (PEM) to write on the remote as /home/{{ ansible_user }}/.ssh/id_deploy
 deploy_ssh_key: ""

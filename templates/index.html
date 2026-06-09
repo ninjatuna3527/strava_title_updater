@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HanRide — Strava Activity Title Magic</title>
-  <meta name="description" content="Connect Strava and automatically rename new activities with beautiful random Chinese script names." />
+  <title>HanRide - AI-Powered Strava Titles</title>
+  <meta name="description" content="Connect Strava and automatically give new activities funny AI-generated titles based on the activity type, duration, and distance." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="{{ BASE_PATH }}/{{ url_for('static', filename='landing/styles.css') }}" />
   <link rel="icon" href="{{ BASE_PATH }}/{{ url_for('static', filename='landing/assets/favicon.svg') }}" type="image/svg+xml" />
@@ -33,16 +33,16 @@
   <main>
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Strava title automation</p>
-        <h1>Turn every activity into a tiny legend.</h1>
+        <p class="eyebrow">AI-powered Strava titles</p>
+        <h1>Every effort deserves an excuse.</h1>
         <p class="lede">
           HanRide connects to Strava and automatically updates incoming activity titles
-          with random Chinese script names — poetic, dramatic, and completely unnecessary.
+          with a funny AI-generated excuse inspired by your activity type, duration, and distance.
         </p>
         <div class="hero-actions">
-          <a class="button primary" href="/authorize">
+          <a class="button primary" href="{{ BASE_PATH }}/authorize">
             <span>Connect with Strava</span>
-            <span class="arrow">→</span>
+            <span class="arrow">-&gt;</span>
           </a>
           <a class="button secondary" href="#examples">See title examples</a>
         </div>
@@ -63,11 +63,11 @@
             </div>
             <div class="activity-meta">
               <div class="activity-kicker">Morning Run renamed to</div>
-              <h2 id="sample-title">雲中疾行</h2>
-              <p>7.42 km · 38:12 · synced from Strava</p>
+              <h2 id="sample-title">My Legs Filed a Complaint</h2>
+              <p>7.42 km | 38:12 | synced from Strava</p>
             </div>
           </div>
-          <button id="shuffle" class="shuffle-button" type="button">Shuffle title</button>
+          <button id="shuffle" class="shuffle-button" type="button">Generate another excuse</button>
         </div>
       </aside>
     </section>
@@ -75,7 +75,7 @@
     <section id="how" class="section">
       <div class="section-heading">
         <p class="eyebrow">How it works</p>
-        <h2>One small automation with maximum flair.</h2>
+        <h2>Your stats go in. A suspiciously good excuse comes out.</h2>
       </div>
 
       <div class="feature-grid">
@@ -86,32 +86,32 @@
         </article>
         <article>
           <span class="icon">02</span>
-          <h3>Detect activities</h3>
-          <p>When a fresh activity arrives, HanRide chooses a random Chinese script title.</p>
+          <h3>Read the effort</h3>
+          <p>When a fresh activity arrives, HanRide uses its type, duration, and distance as context.</p>
         </article>
         <article>
           <span class="icon">03</span>
-          <h3>Rename the moment</h3>
-          <p>The activity title is updated automatically, giving your feed instant mythic energy.</p>
+          <h3>Generate the excuse</h3>
+          <p>AI writes one short, playful excuse and HanRide automatically applies it to the activity.</p>
         </article>
       </div>
     </section>
 
     <section id="examples" class="section examples">
       <div class="section-heading">
-        <p class="eyebrow">Example names</p>
-        <h2>For runs, rides, hikes, and bad decisions.</h2>
+        <p class="eyebrow">Example excuses</p>
+        <h2>Fresh reasons why that definitely was not your fault.</h2>
       </div>
 
       <div class="title-cloud">
-        <span>夜雨疾馳</span>
-        <span>山風未息</span>
-        <span>孤月長跑</span>
-        <span>晨霧破風</span>
-        <span>龍脈上升</span>
-        <span>竹影慢行</span>
-        <span>雲海歸途</span>
-        <span>赤日遠征</span>
+        <span>My Legs Filed a Complaint</span>
+        <span>Blamed It on the Headwind</span>
+        <span>Recovery Pace, Emotionally</span>
+        <span>GPS Added the Slow Bits</span>
+        <span>Carbs Were Still Loading</span>
+        <span>Training for a Longer Nap</span>
+        <span>The Hill Started It</span>
+        <span>Saving My Speed for Next Time</span>
       </div>
     </section>
 
@@ -121,9 +121,9 @@
         <h2>Built to do one job.</h2>
       </div>
       <p>
-        HanRide should request only the Strava permissions needed to read incoming
-        activities and update titles. Keep access tokens encrypted, avoid logging
-        personal activity data, and provide a simple disconnect route before launch.
+        HanRide requests only the Strava permissions needed to read incoming activities
+        and update their titles. Activity type, duration, and distance are used to
+        generate the title; your Strava password is never handled by the app.
       </p>
     </section>
   </main>
