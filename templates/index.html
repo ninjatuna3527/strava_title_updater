@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="{{ url_for('static', filename='landing/styles.css') }}" />
-  <link rel="icon" href="{{ url_for('static', filename='landing/assets/favicon.svg') }}" type="image/svg+xml" />
+  <link rel="stylesheet" href="{{ BASE_PATH }}/{{ url_for('static', filename='landing/styles.css') }}" />
+  <link rel="icon" href="{{ BASE_PATH }}/{{ url_for('static', filename='landing/assets/favicon.svg') }}" type="image/svg+xml" />
 </head>
 <body>
   <div class="ambient ambient-one"></div>
@@ -19,7 +19,7 @@
 
   <header class="site-header">
     <a class="brand" href="#">
-      <img src="{{ url_for('static', filename='landing/assets/logo.svg') }}" alt="" />
+      <img src="{{ BASE_PATH }}/{{ url_for('static', filename='landing/assets/logo.svg') }}" alt="" />
       <span>HanRide</span>
     </a>
     <nav aria-label="Primary navigation">
@@ -58,7 +58,7 @@
           <div class="phone-top"></div>
           <div class="activity-card">
             <div class="map-preview">
-              <img src="{{ url_for('static', filename='landing/assets/route.svg') }}" alt="Stylised running route map" />
+              <img src="{{ BASE_PATH }}/{{ url_for('static', filename='landing/assets/route.svg') }}" alt="Stylised running route map" />
               <span class="live-badge">new activity</span>
             </div>
             <div class="activity-meta">
@@ -130,9 +130,9 @@
 
   <footer>
     <span><span id="year"></span> HanRide - RJL</span>
-    <a href="/authorize">Connect Strava</a>
+    <a href="{{ BASE_PATH }}/authorize">Connect Strava</a>
   </footer>
 
-  <script src="{{ url_for('static', filename='landing/script.js') }}"></script>
+  <script src="{{ BASE_PATH }}/{{ url_for('static', filename='landing/script.js') }}"></script>
 </body>
 </html>

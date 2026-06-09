@@ -1,8 +1,134 @@
 <!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>Callback</title></head>
-  <body>
-    <h1>Authorization complete</h1>
-    <p>You may close this window.</p>
-  </body>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HanRide</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #080a12;
+            --card: rgba(255,255,255,.08);
+            --border: rgba(255,255,255,.15);
+            --text: #f8fafc;
+            --muted: #aab3c8;
+            --success: #22c55e;
+            --error: #ef4444;
+            --accent: #fc4c02;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(circle at 10% 10%, rgba(252,76,2,.25), transparent 25rem),
+                linear-gradient(135deg,#070911,#101423,#090c14);
+            color: var(--text);
+            font-family: Inter,sans-serif;
+        }
+
+        .card {
+            width: min(600px, calc(100% - 40px));
+            padding: 60px;
+            text-align: center;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            backdrop-filter: blur(20px);
+        }
+
+        .icon {
+            width: 90px;
+            height: 90px;
+            margin: auto auto 30px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 42px;
+            font-weight: 900;
+        }
+
+        .success {
+            background: rgba(34,197,94,.15);
+            color: var(--success);
+        }
+
+        .error {
+            background: rgba(239,68,68,.15);
+            color: var(--error);
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            letter-spacing: -.05em;
+        }
+
+        p {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .button {
+            margin-top: 40px;
+            display: inline-block;
+            padding: 15px 24px;
+            border-radius: 999px;
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+
+    {% if success %}
+
+        <div class="icon success">
+            ✓
+        </div>
+
+        <h1>Connected Successfully</h1>
+
+        <p>
+            HanRide is now connected to your Strava account.
+            New activities will automatically receive beautifully random
+            Chinese-script titles.
+        </p>
+
+    {% else %}
+
+        <div class="icon error">
+            ✕
+        </div>
+
+        <h1>Connection Failed</h1>
+
+        <p>
+            We couldn't complete authorization with Strava.
+            {{ error_message }}
+        </p>
+
+    {% endif %}
+
+    <a class="button" href="/">
+        Return Home
+    </a>
+
+</div>
+
+</body>
 </html>
