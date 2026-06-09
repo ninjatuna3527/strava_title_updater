@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="720" y2="520">
+      <stop stop-color="#252a38"/>
+      <stop offset="1" stop-color="#111620"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="720" height="520" fill="url(#bg)"/>
+  <g opacity=".28" stroke="#fff" stroke-width="1">
+    <path d="M0 80h720M0 160h720M0 240h720M0 320h720M0 400h720M0 480h720"/>
+    <path d="M80 0v520M160 0v520M240 0v520M320 0v520M400 0v520M480 0v520M560 0v520M640 0v520"/>
+  </g>
+  <g opacity=".28" fill="none" stroke="#f7f4ef" stroke-width="3">
+    <path d="M-20 370C110 320 132 390 250 330s155-90 260-50 150 4 240-70"/>
+    <path d="M40 120c90 45 145 42 222-8s158-26 220 42 124 60 214 28"/>
+  </g>
+  <path d="M95 400C142 304 196 338 242 262c43-72 94-82 142-29 51 57 82 22 112-41 32-66 92-64 130-18" fill="none" stroke="#fc4c02" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  <path d="M95 400C142 304 196 338 242 262c43-72 94-82 142-29 51 57 82 22 112-41 32-66 92-64 130-18" fill="none" stroke="#ffb86b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="95" cy="400" r="18" fill="#f7f4ef"/>
+  <circle cx="626" cy="174" r="18" fill="#fc4c02"/>
+  <text x="40" y="70" font-family="Inter, Arial" font-size="22" fill="#fff" opacity=".85">route synced</text>
+  <text x="520" y="460" font-family="serif" font-size="76" fill="#fff" opacity=".08">山風</text>
+</svg>

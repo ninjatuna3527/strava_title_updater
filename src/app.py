@@ -41,11 +41,18 @@ def inject_base_path():
     return dict(BASE_PATH=BASE_PATH)
 
 
-@app.route('/')
-def index():
-    """Render the small landing page that starts OAuth."""
-    return render_template('login.html')
+@app.route("/")
+def index_page():
+    return render_template("index.html")
 
+
+@app.route("/callback")
+def callback_page():
+    return render_template(
+        "callback.html",
+        success=False,
+        error_message="The authorization request expired. Please try again."
+    )
 
 @app.route('/authorize')
 def authorize():

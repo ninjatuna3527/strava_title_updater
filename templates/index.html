@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HanRide — Strava Activity Title Magic</title>
+  <meta name="description" content="Connect Strava and automatically rename new activities with beautiful random Chinese script names." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='landing/styles.css') }}" />
+  <link rel="icon" href="{{ url_for('static', filename='landing/assets/favicon.svg') }}" type="image/svg+xml" />
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#">
+      <img src="{{ url_for('static', filename='landing/assets/logo.svg') }}" alt="" />
+      <span>HanRide</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#how">How it works</a>
+      <a href="#examples">Titles</a>
+      <a href="#privacy">Privacy</a>
+    </nav>
+    <a class="nav-cta" href="/authorize">Connect Strava</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Strava title automation</p>
+        <h1>Turn every activity into a tiny legend.</h1>
+        <p class="lede">
+          HanRide connects to Strava and automatically updates incoming activity titles
+          with random Chinese script names — poetic, dramatic, and completely unnecessary.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="/authorize">
+            <span>Connect with Strava</span>
+            <span class="arrow">→</span>
+          </a>
+          <a class="button secondary" href="#examples">See title examples</a>
+        </div>
+        <div class="trust-row">
+          <span>No passwords</span>
+          <span>OAuth only</span>
+          <span>Disconnect anytime</span>
+        </div>
+      </div>
+
+      <aside class="preview-shell" aria-label="Example renamed Strava activity">
+        <div class="phone-frame">
+          <div class="phone-top"></div>
+          <div class="activity-card">
+            <div class="map-preview">
+              <img src="{{ url_for('static', filename='landing/assets/route.svg') }}" alt="Stylised running route map" />
+              <span class="live-badge">new activity</span>
+            </div>
+            <div class="activity-meta">
+              <div class="activity-kicker">Morning Run renamed to</div>
+              <h2 id="sample-title">雲中疾行</h2>
+              <p>7.42 km · 38:12 · synced from Strava</p>
+            </div>
+          </div>
+          <button id="shuffle" class="shuffle-button" type="button">Shuffle title</button>
+        </div>
+      </aside>
+    </section>
+
+    <section id="how" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">How it works</p>
+        <h2>One small automation with maximum flair.</h2>
+      </div>
+
+      <div class="feature-grid">
+        <article>
+          <span class="icon">01</span>
+          <h3>Connect Strava</h3>
+          <p>Authorize using Strava OAuth. Your Strava password is never handled by this app.</p>
+        </article>
+        <article>
+          <span class="icon">02</span>
+          <h3>Detect activities</h3>
+          <p>When a fresh activity arrives, HanRide chooses a random Chinese script title.</p>
+        </article>
+        <article>
+          <span class="icon">03</span>
+          <h3>Rename the moment</h3>
+          <p>The activity title is updated automatically, giving your feed instant mythic energy.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="examples" class="section examples">
+      <div class="section-heading">
+        <p class="eyebrow">Example names</p>
+        <h2>For runs, rides, hikes, and bad decisions.</h2>
+      </div>
+
+      <div class="title-cloud">
+        <span>夜雨疾馳</span>
+        <span>山風未息</span>
+        <span>孤月長跑</span>
+        <span>晨霧破風</span>
+        <span>龍脈上升</span>
+        <span>竹影慢行</span>
+        <span>雲海歸途</span>
+        <span>赤日遠征</span>
+      </div>
+    </section>
+
+    <section id="privacy" class="section privacy">
+      <div>
+        <p class="eyebrow">Privacy</p>
+        <h2>Built to do one job.</h2>
+      </div>
+      <p>
+        HanRide should request only the Strava permissions needed to read incoming
+        activities and update titles. Keep access tokens encrypted, avoid logging
+        personal activity data, and provide a simple disconnect route before launch.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <span><span id="year"></span> HanRide - RJL</span>
+    <a href="/authorize">Connect Strava</a>
+  </footer>
+
+  <script src="{{ url_for('static', filename='landing/script.js') }}"></script>
+</body>
+</html>

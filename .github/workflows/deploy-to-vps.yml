@@ -47,6 +47,7 @@ jobs:
           CALLBACK_HOSTNAME: ${{ secrets.CALLBACK_HOSTNAME }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           FLASK_SECRET_KEY: ${{ secrets.FLASK_SECRET_KEY }}
+          DB_PATH: ${{ secrets.DB_PATH }}
         run: |
           ansible-playbook deploy/ansible/playbook.yml -i deploy/ansible/inventories/prod/inventory \
             --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} repo_branch=main base_path=${BASE_PATH:-/stravaapps}"

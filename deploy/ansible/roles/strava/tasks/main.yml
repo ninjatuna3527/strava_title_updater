@@ -65,14 +65,6 @@
   become: true
   become_user: "{{ ansible_user }}"
 
-- name: Fix repository ownership
-  file:
-    path: "{{ deploy_path }}"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
-    recurse: yes
-  become: true
-
 - name: Render application .env file
   template:
     src: env.j2
@@ -81,6 +73,18 @@
     group: "{{ ansible_user }}"
     mode: '0600'
   no_log: true
+
+- name: create db if not exists
+  file:
+    path: "{{ db_path }}"
+    state: touch
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  register: db_file_created
+
+- name: init db if required
+  command: "{{ deploy_path }}/venv/bin/python -m src.db --init --db-path {{ db_path }}"
+  when: db_file_created.changed
 
 - name: Create virtualenv
   command: python3 -m venv {{ deploy_path }}/venv
