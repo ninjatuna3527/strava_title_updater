@@ -108,6 +108,16 @@
     mode: '0644'
   become: true
 
+
+- name: Render Supervisor scheduler config
+  template:
+    src: supervisor-scheduler.conf.j2
+    dest: "/etc/supervisor/conf.d/{{ scheduler_supervisor_program }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+
 - name: Ensure log files exist
   file:
     path: "/var/log/{{ supervisor_program }}.log"

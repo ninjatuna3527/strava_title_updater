@@ -1,9 +1,9 @@
 ---
 # Role defaults for deploying the Strava Title Updater
 # The deploy_path uses the remote user's home directory by default.
-deploy_path: "/home/{{ ansible_user }}/deployments/strava_chinese_title"
-supervisor_program: "strava_chinese_title"
-scheduler_supervisor_program: "strava_chinese_title_scheduler"
+deploy_path: "/home/{{ ansible_user }}/deployments/hanride"
+supervisor_program: "hanride"
+scheduler_supervisor_program: "hanride_scheduler"
 repo_url: "https://github.com/ninjatuna3527/strava_title_updater.git"
 repo_branch: "main"
 # Nginx + TLS settings
@@ -18,7 +18,7 @@ ssl_key_path: ""
 ssl_contact_email: "admin@example.com"
 # Base path under which the app is served by the reverse proxy.
 # Example: "/stravaapps" will make the app available at https://host/stravaapps
-base_path: "/stravaapps"
+base_path: "/hanride"
 
 # ACME webroot for Let's Encrypt HTTP-01 validation
 acme_webroot: "/var/www/letsencrypt"
