@@ -82,9 +82,6 @@
     group: "{{ ansible_user }}"
   register: db_file_created
 
-- name: init db if required
-  command: "{{ deploy_path }}/venv/bin/python -m src.db --init --db-path {{ db_path }}"
-  when: db_file_created.changed
 
 - name: Create virtualenv
   command: python3 -m venv {{ deploy_path }}/venv
@@ -98,6 +95,13 @@
     virtualenv_command: python3 -m venv
   become: true
   become_user: "{{ ansible_user }}"
+
+  
+- name: init db if required
+  command: "{{ deploy_path }}/venv/bin/python -m src.db --init --db-path {{ db_path }}"
+  args:
+    chdir: "{{ deploy_path }}"
+  when: db_file_created.changed
 
 - name: Render Supervisor program config
   template:
