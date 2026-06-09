@@ -238,6 +238,12 @@
   ignore_errors: true
   become: true
 
+- name: Try to restart the application program
+  command: supervisorctl restart {{ scheduler_supervisor_program }}
+  register: supervisor_restart
+  ignore_errors: true
+  become: true
+
 - name: Start the application program if restart failed
   command: supervisorctl start {{ supervisor_program }}
   when: supervisor_restart is failed
