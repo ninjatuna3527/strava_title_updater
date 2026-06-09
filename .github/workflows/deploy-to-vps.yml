@@ -39,15 +39,16 @@ jobs:
 
       - name: Run Ansible playbook (prod inventory)
         env:
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          SUPERVISOR_PROGRAM: ${{ secrets.SUPERVISOR_PROGRAM }}
-          BASE_PATH: ${{ secrets.BASE_PATH }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          SUPERVISOR_PROGRAM: ${{ vars.SUPERVISOR_PROGRAM }}
+          SUPERVISOR_SCHEDULER_PROGRAM: ${{ vars.SUPERVISOR_SCHEDULER_PROGRAM }}
+          BASE_PATH: ${{ vars.BASE_PATH }}
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
           STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
-          CALLBACK_HOSTNAME: ${{ secrets.CALLBACK_HOSTNAME }}
+          CALLBACK_HOSTNAME: ${{ vars.CALLBACK_HOSTNAME }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           FLASK_SECRET_KEY: ${{ secrets.FLASK_SECRET_KEY }}
-          DB_PATH: ${{ secrets.DB_PATH }}
+          DB_PATH: ${{ vars.DB_PATH }}
         run: |
           ansible-playbook deploy/ansible/playbook.yml -i deploy/ansible/inventories/prod/inventory \
-            --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} repo_branch=main base_path=${BASE_PATH:-/stravaapps} db_path=${DB_PATH}"
+            --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} supervisor_schedulerprogram=${SUPERVISOR_SCHEDULER_PROGRAM} repo_branch=main base_path=${BASE_PATH:-/stravaapps} db_path=${DB_PATH}"
