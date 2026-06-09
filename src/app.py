@@ -14,6 +14,7 @@ from . import db
 from .strava_client import StravaClient
 from .processor import process_new_activities
 import secrets
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 DB_PATH = os.getenv('DB_PATH', './data/strava.db')
 CLIENT_ID = os.getenv('STRAVA_CLIENT_ID')
@@ -33,6 +34,7 @@ app.config.update(
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_SAMESITE="Lax",
 )
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 @app.context_processor
 def inject_base_path():
     """Expose `BASE_PATH` to templates so links can include the prefix."""
