@@ -51,4 +51,4 @@ jobs:
           DB_PATH: ${{ vars.DB_PATH }}
         run: |
           ansible-playbook deploy/ansible/playbook.yml -i deploy/ansible/inventories/prod/inventory \
-            --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} supervisor_schedulerprogram=${SUPERVISOR_SCHEDULER_PROGRAM} repo_branch=main base_path=${BASE_PATH:-/stravaapps} db_path=${DB_PATH}"
+            --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} scheduler_supervisor_program=${SUPERVISOR_SCHEDULER_PROGRAM} repo_branch=main base_path=${BASE_PATH} db_path=${DB_PATH}"

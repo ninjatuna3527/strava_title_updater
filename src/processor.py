@@ -18,17 +18,6 @@ from .chinese import random_chinese
 import os
 
 
-DB_PATH = os.getenv('DB_PATH', './data/strava.db')
-CLIENT_ID = os.getenv('STRAVA_CLIENT_ID')
-CLIENT_SECRET = os.getenv('STRAVA_CLIENT_SECRET')
-NOT_BEFORE = os.getenv('NOT_BEFORE_DATE', '2026-06-05')
-try:
-    nb_dt = datetime.strptime(NOT_BEFORE, '%Y-%m-%d').replace(tzinfo=timezone.utc)
-    NOT_BEFORE_TS = int(nb_dt.timestamp())
-except Exception:
-    NOT_BEFORE_TS = 0
-
-
 def process_new_activities(db_path: str = None, client_id: str = None, client_secret: str = None):
     """Process activities and return a tuple (updated, skipped).
 
@@ -43,6 +32,12 @@ def process_new_activities(db_path: str = None, client_id: str = None, client_se
     db_path = db_path or DB_PATH
     client_id = client_id or CLIENT_ID
     client_secret = client_secret or CLIENT_SECRET
+    NOT_BEFORE = os.getenv('NOT_BEFORE_DATE', '2026-06-05')
+    try:
+        nb_dt = datetime.strptime(NOT_BEFORE, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+        NOT_BEFORE_TS = int(nb_dt.timestamp())
+    except Exception:
+        NOT_BEFORE_TS = 0
     if not client_id or not client_secret:
         raise RuntimeError('STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET must be set')
 
