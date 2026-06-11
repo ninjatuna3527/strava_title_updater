@@ -26,10 +26,17 @@ class StravaClient:
         db_path: path to the SQLite DB used by `src.db`.
     """
 
-    def __init__(self, client_id: str, client_secret: str, db_path: str):
+    def __init__(
+        self,
+        client_id: str,
+        client_secret: str,
+        db_path: str,
+        athlete_id: int = None,
+    ):
         self.client_id = client_id
         self.client_secret = client_secret
         self.db_path = db_path
+        self.athlete_id = athlete_id
 
     def exchange_code(self, code: str):
         """Exchange an OAuth `code` for tokens and persist them.
@@ -44,7 +51,15 @@ class StravaClient:
         })
         resp.raise_for_status()
         data = resp.json()
-        db.save_tokens(self.db_path, data['access_token'], data['refresh_token'], data['expires_at'])
+        athlete = data.get('athlete') or {}
+        self.athlete_id = db.save_tokens(
+            self.db_path,
+            data['access_token'],
+            data['refresh_token'],
+            data['expires_at'],
+            athlete_id=athlete.get('id', self.athlete_id),
+            first_name=athlete.get('firstname'),
+        )
         return data
 
     def refresh_if_needed(self):
@@ -53,7 +68,7 @@ class StravaClient:
         If no tokens are present this returns `None`. When a refresh occurs the
         new tokens are saved to the DB and returned.
         """
-        tokens = db.get_tokens(self.db_path)
+        tokens = db.get_tokens(self.db_path, self.athlete_id)
         if not tokens:
             return None
         # If token expires within 60 seconds, refresh
@@ -66,7 +81,13 @@ class StravaClient:
             })
             resp.raise_for_status()
             data = resp.json()
-            db.save_tokens(self.db_path, data['access_token'], data['refresh_token'], data['expires_at'])
+            db.save_tokens(
+                self.db_path,
+                data['access_token'],
+                data['refresh_token'],
+                data['expires_at'],
+                athlete_id=self.athlete_id,
+            )
             return data
         return tokens
 
@@ -75,7 +96,7 @@ class StravaClient:
 
         Raises RuntimeError when no tokens are stored.
         """
-        tokens = db.get_tokens(self.db_path)
+        tokens = db.get_tokens(self.db_path, self.athlete_id)
         if not tokens:
             raise RuntimeError('No tokens stored; complete OAuth first')
         return {'Authorization': f"Bearer {tokens['access_token']}"}
@@ -98,6 +119,34 @@ class StravaClient:
             resp = requests.get(f"{API_BASE}/athlete/activities", headers=self._get_headers(), params=params)
         resp.raise_for_status()
         return resp.json()
+
+    def get_activity_segment_names(self, activity_id: int, limit: int = 12):
+        """Return unique segment names from an activity's detailed record."""
+        self.refresh_if_needed()
+        url = f"{API_BASE}/activities/{activity_id}"
+        params = {'include_all_efforts': 'true'}
+        resp = requests.get(url, headers=self._get_headers(), params=params)
+        if resp.status_code == 401:
+            self.refresh_if_needed()
+            resp = requests.get(url, headers=self._get_headers(), params=params)
+        resp.raise_for_status()
+
+        names = []
+        seen = set()
+        for effort in resp.json().get('segment_efforts') or []:
+            segment = effort.get('segment') or {}
+            name = segment.get('name') or effort.get('name')
+            if not isinstance(name, str):
+                continue
+            name = ' '.join(name.split()).strip()
+            normalized = name.casefold()
+            if not name or normalized in seen:
+                continue
+            seen.add(normalized)
+            names.append(name[:100])
+            if len(names) >= limit:
+                break
+        return names
 
     def update_activity_name(self, activity_id: int, new_name: str):
         """Update the name/title of an activity.

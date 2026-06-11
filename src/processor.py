@@ -1,16 +1,5 @@
-"""Process new Strava activities and rename them.
+"""Process new Strava activities for every connected user."""
 
-This module contains the core business logic executed by the worker:
-- read the last processed timestamp from `meta.last_processed`
-- list new activities via the Strava API
-- skip activities older than `NOT_BEFORE_DATE`
-- rename remaining activities with an AI-generated title when configured
-
-Functions accept `db_path`/credentials so tests can call the logic in
-isolation without relying on environment variables.
-"""
-
-import time
 from datetime import datetime, timezone
 from . import db
 from .strava_client import StravaClient
@@ -43,12 +32,26 @@ def process_new_activities(db_path: str = None, client_id: str = None, client_se
         raise RuntimeError('STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET must be set')
 
     db.init_db(db_path)
-    client = StravaClient(client_id, client_secret, db_path)
-    last = db.get_meta(db_path, 'last_processed')
-    after = int(last) if last else None
+    updated = 0
+    skipped = 0
+    for user in db.get_users(db_path):
+        user_updated, user_skipped = _process_user(
+            user, db_path, client_id, client_secret, NOT_BEFORE_TS, NOT_BEFORE
+        )
+        updated += user_updated
+        skipped += user_skipped
+    return updated, skipped
+
+
+def _process_user(user, db_path, client_id, client_secret, not_before_ts, not_before):
+    client = StravaClient(
+        client_id, client_secret, db_path, athlete_id=user['athlete_id']
+    )
+    after = user['last_processed']
     activities = client.list_activities(after=after)
     if not activities:
         return 0, 0
+
     max_ts = after or 0
     updated = 0
     skipped = 0
@@ -64,18 +67,24 @@ def process_new_activities(db_path: str = None, client_id: str = None, client_se
         if ts and ts > max_ts:
             max_ts = ts
         # skip activities before NOT_BEFORE date
-        if ts is None or ts < NOT_BEFORE_TS:
+        if ts is None or ts < not_before_ts:
             # log and continue; skipping is expected for old activities
-            print(f"Skipping {act.get('id')} - before not-before date ({NOT_BEFORE})")
+            print(f"Skipping {act.get('id')} - before not-before date ({not_before})")
             skipped += 1
             continue
         title = random_chinese(6)
-        if os.getenv('OPENAI_API_KEY'):
+        if user['title_mode'] == 'ai' and os.getenv('OPENAI_API_KEY'):
             try:
+                segment_names = []
+                try:
+                    segment_names = client.get_activity_segment_names(act['id'])
+                except Exception as exc:
+                    print(f"Segment lookup failed for {act.get('id')}: {exc}")
                 title = generate_ai_title(
                     act.get('type') or act.get('sport_type') or 'Activity',
                     act.get('elapsed_time', 0),
                     act.get('distance', 0),
+                    segment_names=segment_names,
                 )
             except AITitleError as exc:
                 print(f"AI title generation failed for {act.get('id')}: {exc}")
@@ -86,5 +95,5 @@ def process_new_activities(db_path: str = None, client_id: str = None, client_se
             # network or API errors should not stop processing other activities
             continue
     if max_ts:
-        db.set_meta(db_path, 'last_processed', str(max_ts))
+        db.set_last_processed(db_path, user['athlete_id'], max_ts)
     return updated, skipped

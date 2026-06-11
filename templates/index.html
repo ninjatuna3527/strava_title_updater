@@ -27,7 +27,11 @@
       <a href="#examples">Titles</a>
       <a href="#privacy">Privacy</a>
     </nav>
-    <a class="nav-cta" href="{{ BASE_PATH }}/authorize">Connect Strava</a>
+    {% if user %}
+      <a class="nav-cta" href="{{ BASE_PATH }}/settings">Settings</a>
+    {% else %}
+      <a class="nav-cta" href="{{ BASE_PATH }}/authorize">Connect Strava</a>
+    {% endif %}
   </header>
 
   <main>
@@ -130,7 +134,11 @@
 
   <footer>
     <span><span id="year"></span> HanRide - RJL</span>
-    <a href="{{ BASE_PATH }}/authorize">Connect Strava</a>
+    {% if user %}
+      <a href="{{ BASE_PATH }}/settings">Settings</a>
+    {% else %}
+      <a href="{{ BASE_PATH }}/authorize">Connect Strava</a>
+    {% endif %}
   </footer>
 
   <script src="{{ BASE_PATH }}/{{ url_for('static', filename='landing/script.js') }}"></script>

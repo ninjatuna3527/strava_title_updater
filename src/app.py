@@ -8,7 +8,7 @@ processing step once (useful for debugging).
 
 import os
 import sys
-from flask import Flask, redirect, request, render_template, session
+from flask import Flask, redirect, request, render_template, session, url_for
 from dotenv import load_dotenv
 from . import db
 from .strava_client import StravaClient
@@ -30,11 +30,14 @@ app = Flask(__name__, template_folder=templates_dir)
 # secret key for session; prefer setting via FLASK_SECRET_KEY in environment
 app.secret_key = os.getenv('FLASK_SECRET_KEY') or secrets.token_urlsafe(32)
 app.config.update(
-    SESSION_COOKIE_PATH=f"{BASE_PATH}",
+    SESSION_COOKIE_PATH=BASE_PATH or "/",
     SESSION_COOKIE_SECURE=True,
     SESSION_COOKIE_SAMESITE="Lax",
 )
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+db.init_db(DB_PATH)
+
+
 @app.context_processor
 def inject_base_path():
     """Expose `BASE_PATH` to templates so links can include the prefix."""
@@ -43,16 +46,10 @@ def inject_base_path():
 
 @app.route("/")
 def index_page():
-    return render_template("index.html")
+    athlete_id = session.get('athlete_id')
+    user = db.get_user(DB_PATH, athlete_id) if athlete_id is not None else None
+    return render_template("index.html", user=user)
 
-
-@app.route("/callback")
-def callback_page():
-    return render_template(
-        "callback.html",
-        success=False,
-        error_message="The authorization request expired. Please try again."
-    )
 
 @app.route('/authorize')
 def authorize():
@@ -60,9 +57,12 @@ def authorize():
 
     A random `state` token is stored in the Flask session to mitigate CSRF.
     """
-    if not CLIENT_ID:
+    client_id = os.getenv('STRAVA_CLIENT_ID') or CLIENT_ID
+    callback_hostname = os.getenv('CALLBACK_HOSTNAME') or CALLBACK_HOSTNAME
+    callback_scheme = os.getenv('CALLBACK_SCHEME') or CALLBACK_SCHEME or 'https'
+    if not client_id:
         return 'Set STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET in .env and restart.'
-    if not CALLBACK_HOSTNAME:
+    if not callback_hostname:
         return 'Set CALLBACK_HOSTNAME in .env to the public hostname of this app (e.g. myapp.example.com) and restart.'
     if BASE_PATH is None:
         return 'Set BASE_PATH in .env to the base path this app is served under (e.g. /stravaapps) and restart.'
@@ -74,10 +74,12 @@ def authorize():
     # Build external redirect URI. If the application is served under a
     # reverse-proxy base path (e.g. /stravaapps) ensure the callback URI
     # includes that prefix so Strava redirects back correctly.
-    if CALLBACK_HOSTNAME:
-        redirect_uri = f"https://{CALLBACK_HOSTNAME}{BASE_PATH}/callback"
+    if callback_hostname:
+        redirect_uri = (
+            f"{callback_scheme}://{callback_hostname}{BASE_PATH}/callback"
+        )
     url = (
-        f"https://www.strava.com/oauth/authorize?client_id={CLIENT_ID}"
+        f"https://www.strava.com/oauth/authorize?client_id={client_id}"
         f"&response_type=code&redirect_uri={redirect_uri}&approval_prompt=force&scope=activity:write,activity:read_all"
         f"&state={state}"
     )
@@ -90,13 +92,67 @@ def callback():
     code = request.args.get('code')
     state = request.args.get('state')
     if not code:
-        return 'Authorization failed or denied.'
+        return render_template(
+            'callback.html',
+            success=False,
+            error_message='Authorization was denied or did not complete.',
+        )
     saved = session.get('oauth_state')
     if not saved or state != saved:
-        return ('Invalid or missing OAuth state', 400)
-    client = StravaClient(CLIENT_ID, CLIENT_SECRET, DB_PATH)
-    client.exchange_code(code)
-    return render_template('callback.html')
+        return render_template(
+            'callback.html',
+            success=False,
+            error_message='The authorization request expired. Please try again.',
+        ), 400
+    client = StravaClient(
+        os.getenv('STRAVA_CLIENT_ID') or CLIENT_ID,
+        os.getenv('STRAVA_CLIENT_SECRET') or CLIENT_SECRET,
+        DB_PATH,
+    )
+    data = client.exchange_code(code)
+    athlete = data.get('athlete') or {}
+    session.pop('oauth_state', None)
+    session['athlete_id'] = client.athlete_id
+    return render_template(
+        'callback.html',
+        success=True,
+        first_name=athlete.get('firstname', ''),
+    )
+
+
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    """Show and update settings for the connected Strava athlete."""
+    athlete_id = session.get('athlete_id')
+    if athlete_id is None:
+        return redirect(f"{BASE_PATH}{url_for('authorize')}")
+
+    user = db.get_user(DB_PATH, athlete_id)
+    if not user:
+        session.pop('athlete_id', None)
+        return redirect(f"{BASE_PATH}{url_for('authorize')}")
+
+    saved = False
+    if request.method == 'POST':
+        csrf_token = request.form.get('csrf_token')
+        if not csrf_token or csrf_token != session.get('settings_csrf'):
+            return ('Invalid settings request', 400)
+        title_mode = request.form.get('title_mode', '')
+        if title_mode not in db.VALID_TITLE_MODES:
+            return ('Invalid title mode', 400)
+        db.update_user_settings(DB_PATH, athlete_id, title_mode)
+        user = db.get_user(DB_PATH, athlete_id)
+        saved = True
+
+    csrf_token = secrets.token_urlsafe(24)
+    session['settings_csrf'] = csrf_token
+    return render_template(
+        'settings.html',
+        user=user,
+        csrf_token=csrf_token,
+        saved=saved,
+        ai_available=bool(os.getenv('OPENAI_API_KEY')),
+    )
 
 
 @app.route('/health')
@@ -111,8 +167,7 @@ def ready():
     """Readiness probe: DB exists and tokens are present."""
     if not os.path.exists(DB_PATH):
         return ('DB MISSING', 500)
-    tokens = db.get_tokens(DB_PATH)
-    if not tokens:
+    if not db.get_users(DB_PATH):
         return ('NO TOKENS', 500)
     return ('READY', 200)
 

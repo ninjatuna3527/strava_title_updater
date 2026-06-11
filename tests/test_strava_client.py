@@ -25,9 +25,16 @@ def test_exchange_code_and_refresh(tmp_path, monkeypatch):
 
     future = int(_time.time()) + 3600
     with patch('src.strava_client.requests.post') as mock_post:
-        mock_post.return_value = DummyResp({'access_token': 'a', 'refresh_token': 'r', 'expires_at': future})
+        mock_post.return_value = DummyResp({
+            'access_token': 'a',
+            'refresh_token': 'r',
+            'expires_at': future,
+            'athlete': {'id': 42, 'firstname': 'Richard'},
+        })
         res = client.exchange_code('code')
         assert res['access_token'] == 'a'
+        assert client.athlete_id == 42
+        assert _db.get_user(db_path, 42)['first_name'] == 'Richard'
 
     # now simulate refresh flow: store an expired token and expect refresh to be called
     with patch('src.strava_client.requests.post') as mock_post:
@@ -67,6 +74,40 @@ def test_list_and_update(monkeypatch, tmp_path):
         mock_put.return_value = DummyResp({'id': 1})
         res = client.update_activity_name(1, 'name')
         assert res['id'] == 1
+
+
+def test_get_activity_segment_names_deduplicates_and_limits(tmp_path):
+    import time as _time
+    from src import db as _db
+
+    db_path = str(tmp_path / 'db.sqlite')
+    _db.init_db(db_path)
+    _db.save_tokens(db_path, 'tok', 'ref', int(_time.time()) + 3600)
+    client = StravaClient('id', 'secret', db_path)
+
+    class DummyResp:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                'segment_efforts': [
+                    {'segment': {'name': ' Box Hill '}},
+                    {'segment': {'name': 'box hill'}},
+                    {'name': 'River Sprint'},
+                    {'segment': {'name': 'Zig   Zag Road'}},
+                ]
+            }
+
+    with patch('src.strava_client.requests.get', return_value=DummyResp()) as get:
+        names = client.get_activity_segment_names(123, limit=2)
+
+    assert names == ['Box Hill', 'River Sprint']
+    get.assert_called_once()
+    assert get.call_args.args[0].endswith('/activities/123')
+    assert get.call_args.kwargs['params'] == {'include_all_efforts': 'true'}
 
 
 def test_callback_hostname_override(monkeypatch):

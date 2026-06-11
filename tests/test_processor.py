@@ -56,6 +56,10 @@ def test_processor_uses_activity_details_for_ai_title(tmp_path, monkeypatch):
         def list_activities(self, after=None):
             return acts
 
+        def get_activity_segment_names(self, activity_id):
+            assert activity_id == 3
+            return ['Park Climb', 'River Sprint']
+
         def update_activity_name(self, activity_id, new_name):
             updated_names.append((activity_id, new_name))
             return {'id': activity_id}
@@ -71,7 +75,12 @@ def test_processor_uses_activity_details_for_ai_title(tmp_path, monkeypatch):
             db_path=db_path, client_id='id', client_secret='sec'
         )
 
-    generate.assert_called_once_with('Run', 1800, 5000)
+    generate.assert_called_once_with(
+        'Run',
+        1800,
+        5000,
+        segment_names=['Park Climb', 'River Sprint'],
+    )
     assert updated_names == [(3, 'I Was Saving Energy for Later')]
     assert (updated, skipped) == (1, 0)
 
@@ -108,3 +117,38 @@ def test_processor_falls_back_when_ai_generation_fails(tmp_path, monkeypatch):
 
     assert updated_names == ['fallback']
     assert (updated, skipped) == (1, 0)
+
+
+def test_processor_uses_chinese_mode_even_when_ai_is_configured(tmp_path, monkeypatch):
+    db_path = str(tmp_path / 'strava.db')
+    db.init_db(db_path)
+    db.save_tokens(
+        db_path, 'a', 'r', 9999999, athlete_id=7, first_name='Lin'
+    )
+    db.update_user_settings(db_path, 7, 'chinese')
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-key')
+    acts = [make_activity(5, '2026-07-01T00:00:00Z')]
+    updated_names = []
+
+    class DummyClient:
+        def __init__(self, *a, **k):
+            pass
+
+        def list_activities(self, after=None):
+            return acts
+
+        def update_activity_name(self, activity_id, new_name):
+            updated_names.append(new_name)
+
+    with (
+        patch('src.processor.StravaClient', DummyClient),
+        patch('src.processor.random_chinese', return_value='characters'),
+        patch('src.processor.generate_ai_title') as generate,
+    ):
+        result = process_new_activities(
+            db_path=db_path, client_id='id', client_secret='sec'
+        )
+
+    generate.assert_not_called()
+    assert updated_names == ['characters']
+    assert result == (1, 0)
