@@ -132,12 +132,12 @@ def settings():
     """Show and update settings for the connected Strava athlete."""
     athlete_id = session.get('athlete_id')
     if athlete_id is None:
-        return redirect(f"{BASE_PATH}{url_for('authorize')}")
+        return redirect(url_for('authorize'))
 
     user = db.get_user(DB_PATH, athlete_id)
     if not user:
         session.pop('athlete_id', None)
-        return redirect(f"{BASE_PATH}{url_for('authorize')}")
+        return redirect(url_for('authorize'))
 
     saved = False
     if request.method == 'POST':
@@ -176,7 +176,7 @@ def activities_page():
     """List the connected athlete's ten most recent activities."""
     user = _connected_user()
     if not user:
-        return redirect(f"{BASE_PATH}{url_for('authorize')}")
+        return redirect(url_for('authorize'))
 
     client = _strava_client(user['athlete_id'])
     usage = _daily_ai_usage(user['athlete_id'])
@@ -222,7 +222,7 @@ def generate_activity_name(activity_id):
     """Generate and apply a title to one of the athlete's recent activities."""
     user = _connected_user()
     if not user:
-        return redirect(f"{BASE_PATH}{url_for('authorize')}")
+        return redirect(url_for('authorize'))
     if request.form.get('csrf_token') != session.get('activities_csrf'):
         return ('Invalid activity request', 400)
 
@@ -255,7 +255,8 @@ def generate_activity_name(activity_id):
         flash('The activity could not be renamed right now.', 'error')
     else:
         flash(f'Activity renamed to "{title}".', 'success')
-    return redirect(f"{BASE_PATH}{url_for('activities_page')}")
+    # Nginx adds BASE_PATH to upstream Location headers via proxy_redirect.
+    return redirect(url_for('activities_page'))
 
 
 def _connected_user():

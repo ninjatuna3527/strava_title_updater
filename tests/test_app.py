@@ -171,6 +171,40 @@ def test_generate_activity_name_updates_recent_activity(tmp_path, monkeypatch):
     assert b'The Hill Started It' in response.data
 
 
+def test_generate_activity_redirect_leaves_base_path_for_nginx(
+    tmp_path, monkeypatch
+):
+    client = _connected_client(tmp_path, monkeypatch)
+    monkeypatch.setattr(app_module, 'BASE_PATH', '/hanride')
+
+    class DummyStravaClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def list_activities(self, per_page=30):
+            return [{'id': 123, 'type': 'Run'}]
+
+        def update_activity_name(self, activity_id, title):
+            pass
+
+    with patch.object(app_module, 'StravaClient', DummyStravaClient):
+        client.get('/activities')
+        with client.session_transaction() as flask_session:
+            csrf_token = flask_session['activities_csrf']
+        with patch.object(
+            app_module,
+            'generate_ai_activity_title',
+            return_value='Legendary Commute',
+        ):
+            response = client.post(
+                '/activities/123/generate',
+                data={'csrf_token': csrf_token},
+            )
+
+    assert response.status_code == 302
+    assert response.headers['Location'] == '/activities'
+
+
 def test_generate_activity_name_reports_daily_limit(tmp_path, monkeypatch):
     monkeypatch.setenv('OPENAI_API_KEY', 'test-key')
     client = _connected_client(tmp_path, monkeypatch)
