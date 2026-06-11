@@ -8,13 +8,18 @@ processing step once (useful for debugging).
 
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Flask, flash, redirect, request, render_template, session, url_for
 from dotenv import load_dotenv
 from . import db
 from .strava_client import StravaClient
-from .processor import generate_activity_title, process_new_activities
+from .processor import (
+    DailyTitleLimitError,
+    generate_activity_title,
+    generate_ai_activity_title,
+    process_new_activities,
+)
 import secrets
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -142,7 +147,16 @@ def settings():
         title_mode = request.form.get('title_mode', '')
         if title_mode not in db.VALID_TITLE_MODES:
             return ('Invalid title mode', 400)
-        db.update_user_settings(DB_PATH, athlete_id, title_mode)
+        try:
+            commute_periods = _parse_commute_periods(request.form)
+        except ValueError as exc:
+            return (str(exc), 400)
+        db.update_user_settings(
+            DB_PATH,
+            athlete_id,
+            title_mode,
+            **commute_periods,
+        )
         user = db.get_user(DB_PATH, athlete_id)
         saved = True
 
@@ -165,6 +179,7 @@ def activities_page():
         return redirect(f"{BASE_PATH}{url_for('authorize')}")
 
     client = _strava_client(user['athlete_id'])
+    usage = _daily_ai_usage(user['athlete_id'])
     try:
         activities = client.list_activities(per_page=10)
     except Exception:
@@ -174,6 +189,9 @@ def activities_page():
             activities=[],
             error_message='Strava activities could not be loaded right now.',
             csrf_token=_new_activities_csrf(),
+            ai_available=bool(os.getenv('OPENAI_API_KEY')),
+            ai_titles_remaining=usage['remaining'],
+            ai_title_limit=db.DAILY_AI_TITLE_LIMIT,
         ), 502
 
     for activity in activities:
@@ -193,6 +211,9 @@ def activities_page():
         activities=activities,
         error_message=None,
         csrf_token=_new_activities_csrf(),
+        ai_available=bool(os.getenv('OPENAI_API_KEY')),
+        ai_titles_remaining=usage['remaining'],
+        ai_title_limit=db.DAILY_AI_TITLE_LIMIT,
     )
 
 
@@ -218,8 +239,18 @@ def generate_activity_name(activity_id):
         if not activity:
             return ('Activity not found in your recent activities', 404)
 
-        title = generate_activity_title(client, user, activity)
+        title = generate_ai_activity_title(
+            client,
+            activity,
+            db_path=DB_PATH,
+            athlete_id=user['athlete_id'],
+        )
         client.update_activity_name(activity_id, title)
+    except DailyTitleLimitError:
+        flash(
+            f'Your daily limit of {db.DAILY_AI_TITLE_LIMIT} AI titles has been reached.',
+            'error',
+        )
     except Exception:
         flash('The activity could not be renamed right now.', 'error')
     else:
@@ -252,6 +283,15 @@ def _new_activities_csrf():
     return token
 
 
+def _daily_ai_usage(athlete_id):
+    usage_date = datetime.now(timezone.utc).date().isoformat()
+    used = db.get_ai_title_usage(DB_PATH, athlete_id, usage_date)
+    return {
+        'used': used,
+        'remaining': max(0, db.DAILY_AI_TITLE_LIMIT - used),
+    }
+
+
 def _format_activity_distance(distance_metres):
     return f"{float(distance_metres or 0) / 1000:.2f} km"
 
@@ -275,6 +315,32 @@ def _format_activity_date(value):
         return parsed.strftime('%d %b %Y, %H:%M')
     except (TypeError, ValueError):
         return value
+
+
+def _parse_commute_periods(form):
+    periods = {}
+    for number in (1, 2):
+        start_key = f'commute_start_{number}'
+        end_key = f'commute_end_{number}'
+        start = form.get(start_key, '').strip() or None
+        end = form.get(end_key, '').strip() or None
+        if bool(start) != bool(end):
+            raise ValueError(
+                f'Commute period {number} needs both a start and end time'
+            )
+        if start:
+            try:
+                datetime.strptime(start, '%H:%M')
+                datetime.strptime(end, '%H:%M')
+            except ValueError as exc:
+                raise ValueError('Commute times must use HH:MM format') from exc
+            if start == end:
+                raise ValueError(
+                    f'Commute period {number} start and end must be different'
+                )
+        periods[start_key] = start
+        periods[end_key] = end
+    return periods
 
 
 @app.route('/health')

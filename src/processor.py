@@ -8,6 +8,10 @@ from .ai_titles import AITitleError, generate_ai_title
 import os
 
 
+class DailyTitleLimitError(RuntimeError):
+    """Raised when a user has exhausted their daily AI title allowance."""
+
+
 def process_new_activities(db_path: str = None, client_id: str = None, client_secret: str = None):
     """Process activities and return a tuple (updated, skipped).
 
@@ -72,7 +76,11 @@ def _process_user(user, db_path, client_id, client_secret, not_before_ts, not_be
             print(f"Skipping {act.get('id')} - before not-before date ({not_before})")
             skipped += 1
             continue
-        title = generate_activity_title(client, user, act)
+        if is_commute_activity(act, user):
+            print(f"Skipping {act.get('id')} - inside a commute exclusion period")
+            skipped += 1
+            continue
+        title = generate_activity_title(client, user, act, db_path=db_path)
         try:
             client.update_activity_name(act['id'], title)
             updated += 1
@@ -84,24 +92,81 @@ def _process_user(user, db_path, client_id, client_secret, not_before_ts, not_be
     return updated, skipped
 
 
-def generate_activity_title(client, user, activity):
+def generate_activity_title(client, user, activity, db_path=None):
     """Generate a title using the user's configured mode."""
     title = random_chinese(6)
     if user['title_mode'] != 'ai' or not os.getenv('OPENAI_API_KEY'):
         return title
 
     try:
-        segment_names = []
-        try:
-            segment_names = client.get_activity_segment_names(activity['id'])
-        except Exception as exc:
-            print(f"Segment lookup failed for {activity.get('id')}: {exc}")
+        return generate_ai_activity_title(
+            client,
+            activity,
+            db_path=db_path,
+            athlete_id=user['athlete_id'],
+        )
+    except (AITitleError, DailyTitleLimitError) as exc:
+        print(f"AI title generation failed for {activity.get('id')}: {exc}")
+        return title
+
+
+def generate_ai_activity_title(client, activity, db_path, athlete_id, now=None):
+    """Generate an AI title for an activity, including segment context."""
+    now = now or datetime.now(timezone.utc)
+    usage_date = now.date().isoformat()
+    if (
+        db.get_ai_title_usage(db_path, athlete_id, usage_date)
+        >= db.DAILY_AI_TITLE_LIMIT
+    ):
+        raise DailyTitleLimitError(
+            f'Daily AI title limit of {db.DAILY_AI_TITLE_LIMIT} reached'
+        )
+
+    segment_names = []
+    try:
+        segment_names = client.get_activity_segment_names(activity['id'])
+    except Exception as exc:
+        print(f"Segment lookup failed for {activity.get('id')}: {exc}")
+    if not db.reserve_ai_title(db_path, athlete_id, usage_date):
+        raise DailyTitleLimitError(
+            f'Daily AI title limit of {db.DAILY_AI_TITLE_LIMIT} reached'
+        )
+    try:
         return generate_ai_title(
             activity.get('type') or activity.get('sport_type') or 'Activity',
             activity.get('elapsed_time', 0),
             activity.get('distance', 0),
             segment_names=segment_names,
         )
-    except AITitleError as exc:
-        print(f"AI title generation failed for {activity.get('id')}: {exc}")
-        return title
+    except Exception:
+        db.release_ai_title(db_path, athlete_id, usage_date)
+        raise
+
+
+def is_commute_activity(activity, user):
+    """Return whether an activity starts inside a configured local-time window."""
+    local_start = activity.get('start_date_local')
+    if not local_start:
+        return False
+    try:
+        activity_time = datetime.fromisoformat(
+            local_start.replace('Z', '+00:00')
+        ).time().replace(tzinfo=None)
+    except (TypeError, ValueError):
+        return False
+
+    for number in (1, 2):
+        start_value = user.get(f'commute_start_{number}')
+        end_value = user.get(f'commute_end_{number}')
+        if not start_value or not end_value:
+            continue
+        try:
+            start = datetime.strptime(start_value, '%H:%M').time()
+            end = datetime.strptime(end_value, '%H:%M').time()
+        except ValueError:
+            continue
+        if start < end and start <= activity_time < end:
+            return True
+        if start > end and (activity_time >= start or activity_time < end):
+            return True
+    return False

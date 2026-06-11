@@ -7,6 +7,13 @@ from contextlib import contextmanager
 
 DEFAULT_TITLE_MODE = "ai"
 VALID_TITLE_MODES = {"ai", "chinese"}
+DAILY_AI_TITLE_LIMIT = 20
+COMMUTE_COLUMNS = (
+    "commute_start_1",
+    "commute_end_1",
+    "commute_start_2",
+    "commute_end_2",
+)
 
 
 @contextmanager
@@ -48,9 +55,27 @@ def init_db(db_path: str):
                 refresh_token TEXT NOT NULL,
                 expires_at INTEGER NOT NULL,
                 title_mode TEXT NOT NULL DEFAULT 'ai',
-                last_processed INTEGER
+                last_processed INTEGER,
+                commute_start_1 TEXT,
+                commute_end_1 TEXT,
+                commute_start_2 TEXT,
+                commute_end_2 TEXT
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS ai_title_usage (
+                athlete_id INTEGER NOT NULL,
+                usage_date TEXT NOT NULL,
+                title_count INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (athlete_id, usage_date)
+            )
+        """)
+        existing_columns = {
+            row["name"] for row in conn.execute("PRAGMA table_info(users)")
+        }
+        for column in COMMUTE_COLUMNS:
+            if column not in existing_columns:
+                conn.execute(f"ALTER TABLE users ADD COLUMN {column} TEXT")
 
         user_count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         legacy = conn.execute("""
@@ -142,7 +167,9 @@ def get_user(db_path: str, athlete_id: int):
     init_db(db_path)
     with _connect(db_path) as conn:
         row = conn.execute("""
-            SELECT athlete_id, first_name, title_mode, last_processed
+            SELECT athlete_id, first_name, title_mode, last_processed,
+                   commute_start_1, commute_end_1,
+                   commute_start_2, commute_end_2
             FROM users
             WHERE athlete_id = ?
         """, (int(athlete_id),)).fetchone()
@@ -154,22 +181,43 @@ def get_users(db_path: str):
     init_db(db_path)
     with _connect(db_path) as conn:
         rows = conn.execute("""
-            SELECT athlete_id, first_name, title_mode, last_processed
+            SELECT athlete_id, first_name, title_mode, last_processed,
+                   commute_start_1, commute_end_1,
+                   commute_start_2, commute_end_2
             FROM users
             ORDER BY athlete_id
         """).fetchall()
     return [dict(row) for row in rows]
 
 
-def update_user_settings(db_path: str, athlete_id: int, title_mode: str):
-    """Set the title generation mode for one athlete."""
+def update_user_settings(
+    db_path: str,
+    athlete_id: int,
+    title_mode: str,
+    commute_start_1: str = None,
+    commute_end_1: str = None,
+    commute_start_2: str = None,
+    commute_end_2: str = None,
+):
+    """Set title and commute-exclusion preferences for one athlete."""
     if title_mode not in VALID_TITLE_MODES:
         raise ValueError(f"Unsupported title mode: {title_mode}")
+    commute_values = (
+        commute_start_1,
+        commute_end_1,
+        commute_start_2,
+        commute_end_2,
+    )
     with _connect(db_path) as conn:
-        result = conn.execute(
-            "UPDATE users SET title_mode = ? WHERE athlete_id = ?",
-            (title_mode, int(athlete_id)),
-        )
+        result = conn.execute("""
+            UPDATE users
+            SET title_mode = ?,
+                commute_start_1 = ?,
+                commute_end_1 = ?,
+                commute_start_2 = ?,
+                commute_end_2 = ?
+            WHERE athlete_id = ?
+        """, (title_mode, *commute_values, int(athlete_id)))
         if result.rowcount == 0:
             raise KeyError(f"Unknown athlete: {athlete_id}")
 
@@ -181,6 +229,47 @@ def set_last_processed(db_path: str, athlete_id: int, timestamp: int):
             "UPDATE users SET last_processed = ? WHERE athlete_id = ?",
             (int(timestamp), int(athlete_id)),
         )
+
+
+def reserve_ai_title(
+    db_path: str,
+    athlete_id: int,
+    usage_date: str,
+    limit: int = DAILY_AI_TITLE_LIMIT,
+):
+    """Atomically reserve one daily AI title slot."""
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        result = conn.execute("""
+            INSERT INTO ai_title_usage (athlete_id, usage_date, title_count)
+            VALUES (?, ?, 1)
+            ON CONFLICT(athlete_id, usage_date) DO UPDATE SET
+                title_count = title_count + 1
+            WHERE title_count < ?
+        """, (int(athlete_id), usage_date, int(limit)))
+        return result.rowcount == 1
+
+
+def release_ai_title(db_path: str, athlete_id: int, usage_date: str):
+    """Release a reserved slot after failed AI generation."""
+    with _connect(db_path) as conn:
+        conn.execute("""
+            UPDATE ai_title_usage
+            SET title_count = MAX(0, title_count - 1)
+            WHERE athlete_id = ? AND usage_date = ?
+        """, (int(athlete_id), usage_date))
+
+
+def get_ai_title_usage(db_path: str, athlete_id: int, usage_date: str):
+    """Return the number of AI titles generated for a user on a UTC date."""
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        row = conn.execute("""
+            SELECT title_count
+            FROM ai_title_usage
+            WHERE athlete_id = ? AND usage_date = ?
+        """, (int(athlete_id), usage_date)).fetchone()
+    return row["title_count"] if row else 0
 
 
 def get_meta(db_path: str, key: str):

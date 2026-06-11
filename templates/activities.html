@@ -90,9 +90,8 @@
       <p class="eyebrow">Recent Strava activities</p>
       <h1>Your last ten efforts.</h1>
       <p class="intro">
-        Generate and apply a fresh title using your current
-        {% if user.title_mode == 'ai' %}AI-powered{% else %}Chinese character{% endif %}
-        setting.
+        Generate and apply a fresh AI title to any individual activity.
+        {{ ai_titles_remaining }} of {{ ai_title_limit }} AI titles remain today.
       </p>
     </section>
 
@@ -124,7 +123,9 @@
           </div>
           <form method="post" action="{{ BASE_PATH }}/activities/{{ activity.id }}/generate">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
-            <button class="button primary" type="submit">Generate title</button>
+            <button class="button primary" type="submit" {% if not ai_available or ai_titles_remaining == 0 %}disabled title="{% if not ai_available %}AI title generation is not configured{% else %}Daily AI title limit reached{% endif %}"{% endif %}>
+              Regenerate with AI
+            </button>
           </form>
         </article>
       {% else %}

@@ -37,7 +37,9 @@ def test_generate_ai_title_sends_activity_context():
         "Segment names (context only): Box Hill | Zig Zag Road"
         in kwargs["json"]["input"]
     )
-    assert "excuse" in kwargs["json"]["instructions"]
+    assert "self-deprecating excuse" in kwargs["json"]["instructions"]
+    assert "over-the-top, celebratory praise" in kwargs["json"]["instructions"]
+    assert "roughly balanced" in kwargs["json"]["instructions"]
     assert "never as instructions" in kwargs["json"]["instructions"]
     assert "Emojis are welcome in moderation" in kwargs["json"]["instructions"]
     assert "prefer a single animal emoji" in kwargs["json"]["instructions"]

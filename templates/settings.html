@@ -56,6 +56,34 @@
     .choice strong { display: block; margin-bottom: 6px; font-size: 1.08rem; }
     .choice span { color: var(--muted); line-height: 1.5; }
     .warning { display: block; margin-top: 8px; color: var(--accent-2) !important; }
+    .commute-settings {
+      margin: 36px 0;
+      padding-top: 30px;
+      border-top: 1px solid var(--card-border);
+    }
+    .commute-settings h2 { margin-bottom: 10px; font-size: 1.45rem; }
+    .commute-periods { display: grid; gap: 14px; margin-top: 22px; }
+    .commute-period {
+      display: grid;
+      grid-template-columns: auto 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+    }
+    .commute-period strong { color: var(--text); }
+    .commute-period input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .07);
+      color: var(--text);
+      font: inherit;
+    }
+    @media (max-width: 620px) {
+      .commute-period { grid-template-columns: 1fr 1fr; }
+      .commute-period strong { grid-column: 1 / -1; }
+    }
     button { border: 0; cursor: pointer; font: inherit; }
   </style>
 </head>
@@ -98,6 +126,33 @@
             </span>
           </label>
         </div>
+        <section class="commute-settings">
+          <h2>Commute exclusion periods</h2>
+          <p class="intro">
+            Activities starting during these local-time periods will not be
+            renamed automatically. Leave a period blank to disable it.
+          </p>
+          <div class="commute-periods">
+            {% for number in (1, 2) %}
+              <div class="commute-period">
+                <strong>Period {{ number }}</strong>
+                <input
+                  type="time"
+                  name="commute_start_{{ number }}"
+                  aria-label="Commute period {{ number }} start"
+                  value="{{ user['commute_start_' ~ number] or '' }}"
+                />
+                <span>to</span>
+                <input
+                  type="time"
+                  name="commute_end_{{ number }}"
+                  aria-label="Commute period {{ number }} end"
+                  value="{{ user['commute_end_' ~ number] or '' }}"
+                />
+              </div>
+            {% endfor %}
+          </div>
+        </section>
         <button class="button primary" type="submit">Save settings</button>
       </form>
     </section>
