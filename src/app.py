@@ -8,11 +8,13 @@ processing step once (useful for debugging).
 
 import os
 import sys
-from flask import Flask, redirect, request, render_template, session, url_for
+from datetime import datetime
+
+from flask import Flask, flash, redirect, request, render_template, session, url_for
 from dotenv import load_dotenv
 from . import db
 from .strava_client import StravaClient
-from .processor import process_new_activities
+from .processor import generate_activity_title, process_new_activities
 import secrets
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -153,6 +155,126 @@ def settings():
         saved=saved,
         ai_available=bool(os.getenv('OPENAI_API_KEY')),
     )
+
+
+@app.route('/activities')
+def activities_page():
+    """List the connected athlete's ten most recent activities."""
+    user = _connected_user()
+    if not user:
+        return redirect(f"{BASE_PATH}{url_for('authorize')}")
+
+    client = _strava_client(user['athlete_id'])
+    try:
+        activities = client.list_activities(per_page=10)
+    except Exception:
+        return render_template(
+            'activities.html',
+            user=user,
+            activities=[],
+            error_message='Strava activities could not be loaded right now.',
+            csrf_token=_new_activities_csrf(),
+        ), 502
+
+    for activity in activities:
+        activity['display_distance'] = _format_activity_distance(
+            activity.get('distance')
+        )
+        activity['display_duration'] = _format_activity_duration(
+            activity.get('elapsed_time')
+        )
+        activity['display_date'] = _format_activity_date(
+            activity.get('start_date_local') or activity.get('start_date')
+        )
+
+    return render_template(
+        'activities.html',
+        user=user,
+        activities=activities,
+        error_message=None,
+        csrf_token=_new_activities_csrf(),
+    )
+
+
+@app.post('/activities/<int:activity_id>/generate')
+def generate_activity_name(activity_id):
+    """Generate and apply a title to one of the athlete's recent activities."""
+    user = _connected_user()
+    if not user:
+        return redirect(f"{BASE_PATH}{url_for('authorize')}")
+    if request.form.get('csrf_token') != session.get('activities_csrf'):
+        return ('Invalid activity request', 400)
+
+    client = _strava_client(user['athlete_id'])
+    try:
+        recent_activities = client.list_activities(per_page=10)
+        activity = next(
+            (
+                item for item in recent_activities
+                if int(item.get('id', 0)) == activity_id
+            ),
+            None,
+        )
+        if not activity:
+            return ('Activity not found in your recent activities', 404)
+
+        title = generate_activity_title(client, user, activity)
+        client.update_activity_name(activity_id, title)
+    except Exception:
+        flash('The activity could not be renamed right now.', 'error')
+    else:
+        flash(f'Activity renamed to "{title}".', 'success')
+    return redirect(f"{BASE_PATH}{url_for('activities_page')}")
+
+
+def _connected_user():
+    athlete_id = session.get('athlete_id')
+    if athlete_id is None:
+        return None
+    user = db.get_user(DB_PATH, athlete_id)
+    if not user:
+        session.pop('athlete_id', None)
+    return user
+
+
+def _strava_client(athlete_id):
+    return StravaClient(
+        os.getenv('STRAVA_CLIENT_ID') or CLIENT_ID,
+        os.getenv('STRAVA_CLIENT_SECRET') or CLIENT_SECRET,
+        DB_PATH,
+        athlete_id=athlete_id,
+    )
+
+
+def _new_activities_csrf():
+    token = secrets.token_urlsafe(24)
+    session['activities_csrf'] = token
+    return token
+
+
+def _format_activity_distance(distance_metres):
+    return f"{float(distance_metres or 0) / 1000:.2f} km"
+
+
+def _format_activity_duration(duration_seconds):
+    seconds = max(0, int(duration_seconds or 0))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h {minutes:02d}m"
+    return f"{minutes}m {seconds:02d}s"
+
+
+def _format_activity_date(value):
+    if not value:
+        return 'Date unavailable'
+    if not isinstance(value, str):
+        return str(value)
+    try:
+        parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        return parsed.strftime('%d %b %Y, %H:%M')
+    except (TypeError, ValueError):
+        return value
 
 
 @app.route('/health')

@@ -96,6 +96,12 @@ nav {
 
 nav a:hover { color: var(--text); }
 
+.connected-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
 .nav-cta,
 .button {
   border-radius: 999px;

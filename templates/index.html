@@ -28,7 +28,10 @@
       <a href="#privacy">Privacy</a>
     </nav>
     {% if user %}
-      <a class="nav-cta" href="{{ BASE_PATH }}/settings">Settings</a>
+      <div class="connected-actions">
+        <a href="{{ BASE_PATH }}/activities">Activities</a>
+        <a class="nav-cta" href="{{ BASE_PATH }}/settings">Settings</a>
+      </div>
     {% else %}
       <a class="nav-cta" href="{{ BASE_PATH }}/authorize">Connect Strava</a>
     {% endif %}
@@ -135,7 +138,7 @@
   <footer>
     <span><span id="year"></span> HanRide - RJL</span>
     {% if user %}
-      <a href="{{ BASE_PATH }}/settings">Settings</a>
+      <a href="{{ BASE_PATH }}/activities">Activities</a>
     {% else %}
       <a href="{{ BASE_PATH }}/authorize">Connect Strava</a>
     {% endif %}

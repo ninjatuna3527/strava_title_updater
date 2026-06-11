@@ -72,22 +72,7 @@ def _process_user(user, db_path, client_id, client_secret, not_before_ts, not_be
             print(f"Skipping {act.get('id')} - before not-before date ({not_before})")
             skipped += 1
             continue
-        title = random_chinese(6)
-        if user['title_mode'] == 'ai' and os.getenv('OPENAI_API_KEY'):
-            try:
-                segment_names = []
-                try:
-                    segment_names = client.get_activity_segment_names(act['id'])
-                except Exception as exc:
-                    print(f"Segment lookup failed for {act.get('id')}: {exc}")
-                title = generate_ai_title(
-                    act.get('type') or act.get('sport_type') or 'Activity',
-                    act.get('elapsed_time', 0),
-                    act.get('distance', 0),
-                    segment_names=segment_names,
-                )
-            except AITitleError as exc:
-                print(f"AI title generation failed for {act.get('id')}: {exc}")
+        title = generate_activity_title(client, user, act)
         try:
             client.update_activity_name(act['id'], title)
             updated += 1
@@ -97,3 +82,26 @@ def _process_user(user, db_path, client_id, client_secret, not_before_ts, not_be
     if max_ts:
         db.set_last_processed(db_path, user['athlete_id'], max_ts)
     return updated, skipped
+
+
+def generate_activity_title(client, user, activity):
+    """Generate a title using the user's configured mode."""
+    title = random_chinese(6)
+    if user['title_mode'] != 'ai' or not os.getenv('OPENAI_API_KEY'):
+        return title
+
+    try:
+        segment_names = []
+        try:
+            segment_names = client.get_activity_segment_names(activity['id'])
+        except Exception as exc:
+            print(f"Segment lookup failed for {activity.get('id')}: {exc}")
+        return generate_ai_title(
+            activity.get('type') or activity.get('sport_type') or 'Activity',
+            activity.get('elapsed_time', 0),
+            activity.get('distance', 0),
+            segment_names=segment_names,
+        )
+    except AITitleError as exc:
+        print(f"AI title generation failed for {activity.get('id')}: {exc}")
+        return title

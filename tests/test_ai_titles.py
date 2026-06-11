@@ -39,6 +39,8 @@ def test_generate_ai_title_sends_activity_context():
     )
     assert "excuse" in kwargs["json"]["instructions"]
     assert "never as instructions" in kwargs["json"]["instructions"]
+    assert "Emojis are welcome in moderation" in kwargs["json"]["instructions"]
+    assert "prefer a single animal emoji" in kwargs["json"]["instructions"]
 
 
 def test_generate_ai_title_reads_nested_responses_output():

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recent Activities - HanRide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ BASE_PATH }}/{{ url_for('static', filename='landing/styles.css') }}" />
+  <link rel="icon" href="{{ BASE_PATH }}/{{ url_for('static', filename='landing/assets/favicon.svg') }}" type="image/svg+xml" />
+  <style>
+    .activities-main {
+      width: min(960px, calc(100% - 32px));
+      margin: 60px auto 90px;
+      position: relative;
+      z-index: 1;
+    }
+    .page-heading h1 {
+      max-width: 760px;
+      font-size: clamp(3rem, 8vw, 5.6rem);
+      margin-bottom: 18px;
+    }
+    .intro { max-width: 680px; color: var(--muted); font-size: 1.08rem; line-height: 1.7; }
+    .messages { display: grid; gap: 12px; margin: 28px 0; }
+    .message {
+      padding: 15px 18px;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .08);
+      font-weight: 700;
+    }
+    .message.success { color: #86efac; background: rgba(34, 197, 94, .13); }
+    .message.error { color: #fca5a5; background: rgba(239, 68, 68, .13); }
+    .activity-list { display: grid; gap: 14px; margin-top: 36px; }
+    .activity-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 24px;
+      padding: 22px;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      background: var(--card);
+      backdrop-filter: blur(18px);
+    }
+    .activity-type {
+      color: var(--accent-2);
+      font-size: .74rem;
+      font-weight: 900;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+    .activity-row h2 { margin: 7px 0 9px; font-size: 1.35rem; }
+    .activity-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      color: var(--muted);
+      font-size: .94rem;
+    }
+    button { border: 0; cursor: pointer; font: inherit; white-space: nowrap; }
+    .empty {
+      padding: 34px;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      background: var(--card);
+      color: var(--muted);
+      text-align: center;
+    }
+    @media (max-width: 680px) {
+      .activity-row { grid-template-columns: 1fr; }
+      .activity-row .button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <header class="site-header">
+    <a class="brand" href="{{ BASE_PATH }}/">
+      <img src="{{ BASE_PATH }}/{{ url_for('static', filename='landing/assets/logo.svg') }}" alt="" />
+      <span>HanRide</span>
+    </a>
+    <a class="nav-cta" href="{{ BASE_PATH }}/settings">Settings</a>
+  </header>
+
+  <main class="activities-main">
+    <section class="page-heading">
+      <p class="eyebrow">Recent Strava activities</p>
+      <h1>Your last ten efforts.</h1>
+      <p class="intro">
+        Generate and apply a fresh title using your current
+        {% if user.title_mode == 'ai' %}AI-powered{% else %}Chinese character{% endif %}
+        setting.
+      </p>
+    </section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="messages" aria-live="polite">
+          {% for category, message in messages %}
+            <div class="message {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% if error_message %}
+      <div class="message error">{{ error_message }}</div>
+    {% endif %}
+
+    <section class="activity-list" aria-label="Recent activities">
+      {% for activity in activities %}
+        <article class="activity-row">
+          <div>
+            <span class="activity-type">{{ activity.sport_type or activity.type or 'Activity' }}</span>
+            <h2>{{ activity.name or 'Untitled activity' }}</h2>
+            <div class="activity-stats">
+              <span>{{ activity.display_date }}</span>
+              <span>{{ activity.display_distance }}</span>
+              <span>{{ activity.display_duration }}</span>
+            </div>
+          </div>
+          <form method="post" action="{{ BASE_PATH }}/activities/{{ activity.id }}/generate">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+            <button class="button primary" type="submit">Generate title</button>
+          </form>
+        </article>
+      {% else %}
+        {% if not error_message %}
+          <div class="empty">No recent Strava activities were found.</div>
+        {% endif %}
+      {% endfor %}
+    </section>
+  </main>
+</body>
+</html>
