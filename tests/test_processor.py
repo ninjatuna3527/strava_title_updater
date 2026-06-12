@@ -51,6 +51,7 @@ def test_processor_uses_activity_details_for_ai_title(tmp_path, monkeypatch):
         'type': 'Run',
         'elapsed_time': 1800,
         'distance': 5000,
+        'average_speed': 2.5,
     }]
     updated_names = []
 
@@ -61,9 +62,22 @@ def test_processor_uses_activity_details_for_ai_title(tmp_path, monkeypatch):
         def list_activities(self, after=None):
             return acts
 
-        def get_activity_segment_names(self, activity_id):
+        def get_activity_details(self, activity_id):
             assert activity_id == 3
-            return ['Park Climb', 'River Sprint']
+            return {
+                'calories': 420,
+                'total_elevation_gain': 125,
+                'segment_efforts': [
+                    {'segment': {'name': 'Park Climb'}},
+                    {'segment': {'name': 'River Sprint'}},
+                ],
+            }
+
+        def extract_segment_names(self, activity):
+            return [
+                effort['segment']['name']
+                for effort in activity['segment_efforts']
+            ]
 
         def update_activity_name(self, activity_id, new_name):
             updated_names.append((activity_id, new_name))
@@ -85,6 +99,20 @@ def test_processor_uses_activity_details_for_ai_title(tmp_path, monkeypatch):
         1800,
         5000,
         segment_names=['Park Climb', 'River Sprint'],
+        activity_metrics={
+            'id': 3,
+            'start_date': '2026-07-01T00:00:00Z',
+            'type': 'Run',
+            'elapsed_time': 1800,
+            'distance': 5000,
+            'average_speed': 2.5,
+            'calories': 420,
+            'total_elevation_gain': 125,
+            'segment_efforts': [
+                {'segment': {'name': 'Park Climb'}},
+                {'segment': {'name': 'River Sprint'}},
+            ],
+        },
     )
     assert updated_names == [(3, 'I Was Saving Energy for Later')]
     assert (updated, skipped) == (1, 0)
@@ -228,7 +256,10 @@ def test_ai_generation_releases_quota_after_failure(tmp_path):
     db.init_db(db_path)
 
     class DummyClient:
-        def get_activity_segment_names(self, activity_id):
+        def get_activity_details(self, activity_id):
+            return {}
+
+        def extract_segment_names(self, activity):
             return []
 
     now = datetime(2026, 6, 11, tzinfo=timezone.utc)

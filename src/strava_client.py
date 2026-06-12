@@ -120,8 +120,8 @@ class StravaClient:
         resp.raise_for_status()
         return resp.json()
 
-    def get_activity_segment_names(self, activity_id: int, limit: int = 12):
-        """Return unique segment names from an activity's detailed record."""
+    def get_activity_details(self, activity_id: int):
+        """Return an activity's detailed record, including segment efforts."""
         self.refresh_if_needed()
         url = f"{API_BASE}/activities/{activity_id}"
         params = {'include_all_efforts': 'true'}
@@ -130,10 +130,21 @@ class StravaClient:
             self.refresh_if_needed()
             resp = requests.get(url, headers=self._get_headers(), params=params)
         resp.raise_for_status()
+        return resp.json()
 
+    def get_activity_segment_names(self, activity_id: int, limit: int = 12):
+        """Return unique segment names from an activity's detailed record."""
+        return self.extract_segment_names(
+            self.get_activity_details(activity_id),
+            limit=limit,
+        )
+
+    @staticmethod
+    def extract_segment_names(activity: dict, limit: int = 12):
+        """Extract unique segment names from detailed activity data."""
         names = []
         seen = set()
-        for effort in resp.json().get('segment_efforts') or []:
+        for effort in activity.get('segment_efforts') or []:
             segment = effort.get('segment') or {}
             name = segment.get('name') or effort.get('name')
             if not isinstance(name, str):

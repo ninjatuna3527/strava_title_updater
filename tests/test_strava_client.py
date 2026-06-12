@@ -76,7 +76,7 @@ def test_list_and_update(monkeypatch, tmp_path):
         assert res['id'] == 1
 
 
-def test_get_activity_segment_names_deduplicates_and_limits(tmp_path):
+def test_get_activity_details_and_segment_names(tmp_path):
     import time as _time
     from src import db as _db
 
@@ -102,12 +102,16 @@ def test_get_activity_segment_names_deduplicates_and_limits(tmp_path):
             }
 
     with patch('src.strava_client.requests.get', return_value=DummyResp()) as get:
-        names = client.get_activity_segment_names(123, limit=2)
-
-    assert names == ['Box Hill', 'River Sprint']
+        details = client.get_activity_details(123)
+    assert len(details['segment_efforts']) == 4
     get.assert_called_once()
     assert get.call_args.args[0].endswith('/activities/123')
     assert get.call_args.kwargs['params'] == {'include_all_efforts': 'true'}
+
+    with patch('src.strava_client.requests.get', return_value=DummyResp()):
+        names = client.get_activity_segment_names(123, limit=2)
+
+    assert names == ['Box Hill', 'River Sprint']
 
 
 def test_callback_hostname_override(monkeypatch):

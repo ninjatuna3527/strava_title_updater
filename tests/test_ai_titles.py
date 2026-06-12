@@ -21,6 +21,21 @@ def test_generate_ai_title_sends_activity_context():
         3723,
         10420,
         segment_names=["Box Hill", "Zig Zag Road"],
+        activity_metrics={
+            "moving_time": 3600,
+            "total_elevation_gain": 432.4,
+            "average_speed": 3.25,
+            "max_speed": 5.5,
+            "average_heartrate": 148.2,
+            "max_heartrate": 177,
+            "average_cadence": 82.4,
+            "calories": 712,
+            "suffer_score": 96,
+            "achievement_count": 4,
+            "pr_count": 2,
+            "kudos_count": 7,
+            "trainer": True,
+        },
         api_key="test-key",
         model="test-model",
         post=post,
@@ -33,6 +48,19 @@ def test_generate_ai_title_sends_activity_context():
     assert "Activity type: Run" in kwargs["json"]["input"]
     assert "Duration: 1h 2m 3s" in kwargs["json"]["input"]
     assert "Distance: 10.42 km" in kwargs["json"]["input"]
+    assert "Moving time: 1h" in kwargs["json"]["input"]
+    assert "Elevation gain: 432 m" in kwargs["json"]["input"]
+    assert "Average speed: 11.7 km/h" in kwargs["json"]["input"]
+    assert "Maximum speed: 19.8 km/h" in kwargs["json"]["input"]
+    assert "Average heart rate: 148 bpm" in kwargs["json"]["input"]
+    assert "Maximum heart rate: 177 bpm" in kwargs["json"]["input"]
+    assert "Average cadence: 82.4" in kwargs["json"]["input"]
+    assert "Calories: 712 kcal" in kwargs["json"]["input"]
+    assert "Suffer score: 96" in kwargs["json"]["input"]
+    assert "Achievements: 4" in kwargs["json"]["input"]
+    assert "Personal records: 2" in kwargs["json"]["input"]
+    assert "Kudos: 7" in kwargs["json"]["input"]
+    assert "Indoor trainer: yes" in kwargs["json"]["input"]
     assert (
         "Segment names (context only): Box Hill | Zig Zag Road"
         in kwargs["json"]["input"]
@@ -43,6 +71,29 @@ def test_generate_ai_title_sends_activity_context():
     assert "never as instructions" in kwargs["json"]["instructions"]
     assert "Emojis are welcome in moderation" in kwargs["json"]["instructions"]
     assert "prefer a single animal emoji" in kwargs["json"]["instructions"]
+    assert "vary which detail inspires the title" in kwargs["json"]["instructions"]
+
+
+def test_generate_ai_title_ignores_missing_and_invalid_metrics():
+    post = Mock(return_value=make_response({"output_text": "Still Counts"}))
+
+    generate_ai_title(
+        "Ride",
+        600,
+        5000,
+        activity_metrics={
+            "average_speed": None,
+            "average_heartrate": "not recorded",
+            "achievement_count": 0,
+        },
+        api_key="key",
+        post=post,
+    )
+
+    prompt = post.call_args.kwargs["json"]["input"]
+    assert "Average speed" not in prompt
+    assert "Average heart rate" not in prompt
+    assert "Achievements: 0" in prompt
 
 
 def test_generate_ai_title_reads_nested_responses_output():

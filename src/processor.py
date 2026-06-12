@@ -122,21 +122,27 @@ def generate_ai_activity_title(client, activity, db_path, athlete_id, now=None):
             f'Daily AI title limit of {db.DAILY_AI_TITLE_LIMIT} reached'
         )
 
+    activity_context = dict(activity)
     segment_names = []
     try:
-        segment_names = client.get_activity_segment_names(activity['id'])
+        details = client.get_activity_details(activity['id'])
+        activity_context.update(details)
+        segment_names = client.extract_segment_names(details)
     except Exception as exc:
-        print(f"Segment lookup failed for {activity.get('id')}: {exc}")
+        print(f"Activity detail lookup failed for {activity.get('id')}: {exc}")
     if not db.reserve_ai_title(db_path, athlete_id, usage_date):
         raise DailyTitleLimitError(
             f'Daily AI title limit of {db.DAILY_AI_TITLE_LIMIT} reached'
         )
     try:
         return generate_ai_title(
-            activity.get('type') or activity.get('sport_type') or 'Activity',
-            activity.get('elapsed_time', 0),
-            activity.get('distance', 0),
+            activity_context.get('type')
+            or activity_context.get('sport_type')
+            or 'Activity',
+            activity_context.get('elapsed_time', 0),
+            activity_context.get('distance', 0),
             segment_names=segment_names,
+            activity_metrics=activity_context,
         )
     except Exception:
         db.release_ai_title(db_path, athlete_id, usage_date)
