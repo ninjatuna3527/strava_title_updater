@@ -32,9 +32,26 @@ def test_generate_ai_title_sends_activity_context():
             "calories": 712,
             "suffer_score": 96,
             "achievement_count": 4,
-            "pr_count": 2,
+            "pr_count": 9,
             "kudos_count": 7,
             "trainer": True,
+            "segment_efforts": [
+                {
+                    "segment": {"name": "Box Hill"},
+                    "pr_rank": 1,
+                    "kom_rank": None,
+                },
+                {
+                    "segment": {"name": "Zig Zag Road"},
+                    "pr_rank": 2,
+                    "kom_rank": 7,
+                },
+                {
+                    "segment": {"name": "Ordinary Climb"},
+                    "pr_rank": 1,
+                    "kom_rank": 11,
+                },
+            ],
         },
         api_key="test-key",
         model="test-model",
@@ -58,9 +75,14 @@ def test_generate_ai_title_sends_activity_context():
     assert "Calories: 712 kcal" in kwargs["json"]["input"]
     assert "Suffer score: 96" in kwargs["json"]["input"]
     assert "Achievements: 4" in kwargs["json"]["input"]
-    assert "Personal records: 2" in kwargs["json"]["input"]
+    assert "Personal records" not in kwargs["json"]["input"]
     assert "Kudos: 7" in kwargs["json"]["input"]
     assert "Indoor trainer: yes" in kwargs["json"]["input"]
+    assert (
+        "Top-10 all-time segment placements: Zig Zag Road (#7)"
+        in kwargs["json"]["input"]
+    )
+    assert "Ordinary Climb (#11)" not in kwargs["json"]["input"]
     assert (
         "Segment names (context only): Box Hill | Zig Zag Road"
         in kwargs["json"]["input"]
@@ -72,6 +94,8 @@ def test_generate_ai_title_sends_activity_context():
     assert "Emojis are welcome in moderation" in kwargs["json"]["instructions"]
     assert "prefer a single animal emoji" in kwargs["json"]["instructions"]
     assert "vary which detail inspires the title" in kwargs["json"]["instructions"]
+    assert "Do not make ordinary segment personal records" in kwargs["json"]["instructions"]
+    assert "top-10 all-time placement" in kwargs["json"]["instructions"]
 
 
 def test_generate_ai_title_ignores_missing_and_invalid_metrics():
