@@ -187,6 +187,7 @@ def activities_page():
             'activities.html',
             user=user,
             activities=[],
+            pending_title=session.get('pending_activity_title'),
             error_message='Strava activities could not be loaded right now.',
             csrf_token=_new_activities_csrf(),
             ai_available=bool(os.getenv('OPENAI_API_KEY')),
@@ -209,6 +210,7 @@ def activities_page():
         'activities.html',
         user=user,
         activities=activities,
+        pending_title=session.get('pending_activity_title'),
         error_message=None,
         csrf_token=_new_activities_csrf(),
         ai_available=bool(os.getenv('OPENAI_API_KEY')),
@@ -219,7 +221,7 @@ def activities_page():
 
 @app.post('/activities/<int:activity_id>/generate')
 def generate_activity_name(activity_id):
-    """Generate and apply a title to one of the athlete's recent activities."""
+    """Generate an AI title and hold it for approval."""
     user = _connected_user()
     if not user:
         return redirect(url_for('authorize'))
@@ -245,17 +247,75 @@ def generate_activity_name(activity_id):
             db_path=DB_PATH,
             athlete_id=user['athlete_id'],
         )
-        client.update_activity_name(activity_id, title)
+        session['pending_activity_title'] = {
+            'athlete_id': user['athlete_id'],
+            'activity_id': activity_id,
+            'activity_name': activity.get('name') or 'Untitled activity',
+            'title': title,
+        }
     except DailyTitleLimitError:
         flash(
             f'Your daily limit of {db.DAILY_AI_TITLE_LIMIT} AI titles has been reached.',
             'error',
         )
     except Exception:
-        flash('The activity could not be renamed right now.', 'error')
+        flash('A title could not be generated right now.', 'error')
     else:
-        flash(f'Activity renamed to "{title}".', 'success')
+        flash('AI title generated. Approve it before updating Strava.', 'success')
     # Nginx adds BASE_PATH to upstream Location headers via proxy_redirect.
+    return redirect(url_for('activities_page'))
+
+
+@app.post('/activities/<int:activity_id>/approve')
+def approve_activity_name(activity_id):
+    """Apply a previously generated title after explicit approval."""
+    user = _connected_user()
+    if not user:
+        return redirect(url_for('authorize'))
+    if request.form.get('csrf_token') != session.get('activities_csrf'):
+        return ('Invalid activity request', 400)
+
+    pending = session.get('pending_activity_title') or {}
+    if (
+        pending.get('athlete_id') != user['athlete_id']
+        or pending.get('activity_id') != activity_id
+        or not pending.get('title')
+    ):
+        return ('No generated title is awaiting approval', 400)
+
+    client = _strava_client(user['athlete_id'])
+    try:
+        recent_activities = client.list_activities(per_page=10)
+        if not any(
+            int(item.get('id', 0)) == activity_id
+            for item in recent_activities
+        ):
+            return ('Activity not found in your recent activities', 404)
+        client.update_activity_name(activity_id, pending['title'])
+    except Exception:
+        flash('The approved title could not be applied to Strava.', 'error')
+    else:
+        session.pop('pending_activity_title', None)
+        flash(f'Activity renamed to "{pending["title"]}".', 'success')
+    return redirect(url_for('activities_page'))
+
+
+@app.post('/activities/<int:activity_id>/cancel')
+def cancel_activity_name(activity_id):
+    """Discard a generated title without updating Strava."""
+    user = _connected_user()
+    if not user:
+        return redirect(url_for('authorize'))
+    if request.form.get('csrf_token') != session.get('activities_csrf'):
+        return ('Invalid activity request', 400)
+
+    pending = session.get('pending_activity_title') or {}
+    if (
+        pending.get('athlete_id') == user['athlete_id']
+        and pending.get('activity_id') == activity_id
+    ):
+        session.pop('pending_activity_title', None)
+        flash('Generated title discarded.', 'success')
     return redirect(url_for('activities_page'))
 
 

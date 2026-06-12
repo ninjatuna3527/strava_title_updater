@@ -127,7 +127,9 @@ def test_activities_lists_latest_ten(tmp_path, monkeypatch):
     assert b'20 of 20 AI titles remain today' in response.data
 
 
-def test_generate_activity_name_updates_recent_activity(tmp_path, monkeypatch):
+def test_generate_activity_name_requires_approval_before_update(
+    tmp_path, monkeypatch
+):
     client = _connected_client(tmp_path, monkeypatch, title_mode='chinese')
     updated = []
     activity = {
@@ -166,9 +168,89 @@ def test_generate_activity_name_updates_recent_activity(tmp_path, monkeypatch):
 
     assert response.status_code == 200
     generate.assert_called_once()
+    assert updated == []
+    assert b'Approve and update Strava' in response.data
+    assert b'The Hill Started It' in response.data
+    assert b'AI title generated' in response.data
+
+    with client.session_transaction() as flask_session:
+        csrf_token = flask_session['activities_csrf']
+    with patch.object(app_module, 'StravaClient', DummyStravaClient):
+        response = client.post(
+            '/activities/123/approve',
+            data={'csrf_token': csrf_token},
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
     assert updated == [(123, 'The Hill Started It')]
     assert b'Activity renamed to' in response.data
-    assert b'The Hill Started It' in response.data
+    assert b'Approve and update Strava' not in response.data
+
+
+def test_cancel_generated_activity_name_does_not_update_strava(
+    tmp_path, monkeypatch
+):
+    client = _connected_client(tmp_path, monkeypatch)
+    updated = []
+
+    class DummyStravaClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def list_activities(self, per_page=30):
+            return [{'id': 123, 'name': 'Morning Run', 'type': 'Run'}]
+
+        def update_activity_name(self, activity_id, title):
+            updated.append((activity_id, title))
+
+    with patch.object(app_module, 'StravaClient', DummyStravaClient):
+        client.get('/activities')
+        with client.session_transaction() as flask_session:
+            csrf_token = flask_session['activities_csrf']
+        with patch.object(
+            app_module,
+            'generate_ai_activity_title',
+            return_value='Preview Only',
+        ):
+            client.post(
+                '/activities/123/generate',
+                data={'csrf_token': csrf_token},
+                follow_redirects=True,
+            )
+        with client.session_transaction() as flask_session:
+            csrf_token = flask_session['activities_csrf']
+        response = client.post(
+            '/activities/123/cancel',
+            data={'csrf_token': csrf_token},
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert updated == []
+    assert b'Generated title discarded' in response.data
+    assert b'Preview Only' not in response.data
+
+
+def test_approve_rejects_mismatched_pending_activity(tmp_path, monkeypatch):
+    client = _connected_client(tmp_path, monkeypatch)
+    client.get('/activities')
+    with client.session_transaction() as flask_session:
+        csrf_token = flask_session['activities_csrf']
+        flask_session['pending_activity_title'] = {
+            'athlete_id': 88,
+            'activity_id': 123,
+            'activity_name': 'Morning Run',
+            'title': 'Pending title',
+        }
+
+    response = client.post(
+        '/activities/999/approve',
+        data={'csrf_token': csrf_token},
+    )
+
+    assert response.status_code == 400
+    assert b'No generated title is awaiting approval' in response.data
 
 
 def test_generate_activity_redirect_leaves_base_path_for_nginx(
