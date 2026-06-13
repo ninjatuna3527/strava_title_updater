@@ -11,10 +11,64 @@
     update_cache: yes
   become: true
 
+- name: Validate ModSecurity WAF configuration
+  assert:
+    that:
+      - nginx_waf_mode in ['On', 'DetectionOnly']
+      - nginx_waf_paranoia_level | int >= 1
+      - nginx_waf_paranoia_level | int <= 4
+      - nginx_waf_inbound_anomaly_threshold | int >= 1
+      - nginx_waf_outbound_anomaly_threshold | int >= 1
+    fail_msg: >-
+      nginx_waf_mode must be On or DetectionOnly, paranoia level must be
+      between 1 and 4, and anomaly thresholds must be positive.
+  when: nginx_waf_enabled | bool
+
+- name: Install ModSecurity nginx connector and OWASP CRS
+  apt:
+    name:
+      - libnginx-mod-http-modsecurity
+      - modsecurity-crs
+    state: present
+    update_cache: yes
+  when: nginx_waf_enabled | bool
+  become: true
+
+- name: Render ModSecurity OWASP CRS configuration
+  template:
+    src: modsecurity.conf.j2
+    dest: /etc/nginx/modsecurity-hanride.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: nginx_waf_enabled | bool
+  become: true
+
+- name: Ensure ModSecurity audit log exists
+  file:
+    path: "{{ nginx_waf_audit_log }}"
+    state: touch
+    owner: www-data
+    group: adm
+    mode: '0640'
+  when: nginx_waf_enabled | bool
+  become: true
+
+- name: Configure ModSecurity audit log rotation
+  template:
+    src: modsecurity-logrotate.j2
+    dest: /etc/logrotate.d/nginx-modsecurity
+    owner: root
+    group: root
+    mode: '0644'
+  when: nginx_waf_enabled | bool
+  become: true
+
 - name: Validate SMTP relay configuration
   assert:
     that:
       - smtp_sender | length > 0
+      - smtp_user | length > 0
       - smtp_pass | length > 0
       - admin_email | length > 0
       - smtp_host | length > 0
@@ -22,9 +76,9 @@
       - smtp_port | int <= 65535
       - smtp_security in ['starttls', 'ssl', 'unencrypted']
     fail_msg: >-
-      SMTP_SENDER, SMTP_PASS, SMTP_HOST, SMTP_PORT, and ADMIN_EMAIL must be
-      configured when smtp_enabled is true. SMTP_PORT must be between 1 and
-      65535, and SMTP_SECURITY must be starttls, ssl, or unencrypted.
+      SMTP_SENDER, SMTP_USER, SMTP_PASS, SMTP_HOST, SMTP_PORT, and ADMIN_EMAIL
+      must be configured when smtp_enabled is true. SMTP_PORT must be between
+      1 and 65535, and SMTP_SECURITY must be starttls, ssl, or unencrypted.
   when: smtp_enabled | bool
   no_log: true
 
@@ -51,8 +105,15 @@
     name: "{{ ansible_user }}"
     groups: msmtp
     append: true
+  register: smtp_group_membership
   when: smtp_enabled | bool
   become: true
+
+- name: Reload deployment user group membership
+  meta: reset_connection
+  when:
+    - smtp_enabled | bool
+    - smtp_group_membership is changed
 
 - name: Render system SMTP relay configuration
   template:

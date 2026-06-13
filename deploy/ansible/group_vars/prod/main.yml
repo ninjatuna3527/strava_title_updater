@@ -3,3 +3,4 @@ nginx_server_name: "{{ callback_hostname | default('strava.leeson.zone') }}"
 enable_tls: true
 ssl_contact_email: "richard@leeson.zone"
 smtp_enabled: true
+nginx_waf_enabled: true

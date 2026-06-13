@@ -55,6 +55,7 @@ jobs:
           NGINX_RATE_LIMIT_RATE: ${{ vars.NGINX_RATE_LIMIT_RATE }}
           NGINX_RATE_LIMIT_BURST: ${{ vars.NGINX_RATE_LIMIT_BURST }}
           SMTP_SENDER: ${{ vars.SMTP_SENDER }}
+          SMTP_USER: ${{ vars.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_HOST: ${{ vars.SMTP_HOST }}
           SMTP_PORT: ${{ vars.SMTP_PORT }}

@@ -19,5 +19,5 @@ account default
 host {{ smtp_host }}
 port {{ smtp_port }}
 from {{ smtp_sender }}
-user {{ smtp_sender }}
+user {{ smtp_user }}
 passwordeval "cat /etc/msmtp-password"

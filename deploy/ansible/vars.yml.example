@@ -8,10 +8,17 @@ nginx_rate_limit_zone_size: "10m"
 nginx_rate_limit_rate: "10r/s"
 nginx_rate_limit_burst: 20
 nginx_rate_limit_status: 429
+nginx_admin_allowed_cidrs: []
+nginx_waf_enabled: false
+nginx_waf_mode: On
+nginx_waf_paranoia_level: 1
+nginx_waf_inbound_anomaly_threshold: 5
+nginx_waf_outbound_anomaly_threshold: 4
 smtp_enabled: false
 smtp_host: smtp.example.com
 smtp_port: 587
 smtp_security: starttls
 smtp_sender: sender@example.com
+smtp_user: smtp-login@example.com
 smtp_pass: use-an-encrypted-variable-or-environment-secret
 admin_email: admin@example.com

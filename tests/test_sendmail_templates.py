@@ -27,6 +27,7 @@ def test_msmtp_config_uses_authenticated_starttls():
         smtp_port=587,
         smtp_security="starttls",
         smtp_sender="sender@example.com",
+        smtp_user="smtp-login@example.com",
     )
 
     assert "auth on" in rendered
@@ -34,7 +35,8 @@ def test_msmtp_config_uses_authenticated_starttls():
     assert "tls_starttls on" in rendered
     assert "host smtp.example.com" in rendered
     assert "port 587" in rendered
-    assert "user sender@example.com" in rendered
+    assert "from sender@example.com" in rendered
+    assert "user smtp-login@example.com" in rendered
     assert 'passwordeval "cat /etc/msmtp-password"' in rendered
 
 
@@ -44,6 +46,7 @@ def test_msmtp_config_uses_implicit_tls():
         smtp_port=465,
         smtp_security="ssl",
         smtp_sender="sender@example.com",
+        smtp_user="smtp-login@example.com",
     )
 
     assert "tls on" in rendered
@@ -57,6 +60,7 @@ def test_msmtp_config_can_use_unencrypted_smtp():
         smtp_port=25,
         smtp_security="unencrypted",
         smtp_sender="sender@example.com",
+        smtp_user="smtp-login@example.com",
     )
 
     assert "tls off" in rendered

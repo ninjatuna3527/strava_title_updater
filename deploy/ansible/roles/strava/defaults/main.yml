@@ -28,6 +28,19 @@ nginx_rate_limit_zone_size: "10m"
 nginx_rate_limit_rate: "10r/s"
 nginx_rate_limit_burst: 20
 nginx_rate_limit_status: 429
+nginx_admin_allowed_cidrs: []
+nginx_ssl_ciphers: "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256"
+nginx_content_security_policy: >-
+  default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'
+  https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;
+  img-src 'self' data:; connect-src 'self'; frame-ancestors 'self';
+  base-uri 'self'; form-action 'self'
+nginx_waf_enabled: false
+nginx_waf_mode: "On"
+nginx_waf_paranoia_level: 1
+nginx_waf_inbound_anomaly_threshold: 5
+nginx_waf_outbound_anomaly_threshold: 4
+nginx_waf_audit_log: "/var/log/nginx/modsecurity_audit.log"
 
 # Authenticated SMTP relay exposed through the sendmail-compatible interface
 smtp_enabled: false
@@ -35,6 +48,7 @@ smtp_host: ""
 smtp_port: ""
 smtp_security: "starttls"
 smtp_sender: ""
+smtp_user: ""
 smtp_pass: ""
 admin_email: ""
 

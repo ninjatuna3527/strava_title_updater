@@ -1,10 +1,36 @@
 limit_req_zone $binary_remote_addr zone=hanride_per_ip:{{ nginx_rate_limit_zone_size }} rate={{ nginx_rate_limit_rate }};
+server_tokens off;
 
 server {
     listen 80;
-    server_name strava.leeson.zone;
+    server_name {{ nginx_server_name }};
     limit_req_status {{ nginx_rate_limit_status|default('429') }};
     limit_req_log_level warn;
+{% if nginx_waf_enabled %}
+    modsecurity on;
+    modsecurity_rules_file /etc/nginx/modsecurity-hanride.conf;
+    modsecurity_transaction_id "$server_name-$request_id";
+{% endif %}
+
+    add_header Content-Security-Policy "{{ nginx_content_security_policy }}" always;
+    add_header Permissions-Policy "camera=(), geolocation=(), microphone=()" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "0" always;
+
+    location ~ /\.(?!well-known/) {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~* ^/(?:admin(?:/|$)|.*/admin(?:/|$)|.*(?:\.git|\.svn)(?:/|$)) {
+{% for cidr in nginx_admin_allowed_cidrs %}
+        allow {{ cidr }};
+{% endfor %}
+        deny all;
+    }
 
     # Serve the application under the configured base path and proxy
     # to the local Gunicorn instance on port 5000. Requests to
@@ -37,12 +63,18 @@ server {
 
     # Allow Let's Encrypt to perform HTTP-01 validation via the webroot
     location ^~ /.well-known/acme-challenge/ {
+{% if nginx_waf_enabled %}
+        modsecurity off;
+{% endif %}
         root {{ acme_webroot | default('/var/www/letsencrypt') }};
         try_files $uri =404;
     }
 
     # Health endpoint exposed at the base path
     location = {{ base_path }}/health {
+{% if nginx_waf_enabled %}
+        modsecurity off;
+{% endif %}
         limit_req zone=hanride_per_ip burst={{ nginx_rate_limit_burst }} nodelay;
         proxy_pass http://127.0.0.1:5000/health;
     }
@@ -56,14 +88,43 @@ server {
 {% if enable_tls %}
 server {
     listen 443 ssl;
-    server_name strava.leeson.zone;
+    server_name {{ nginx_server_name }};
 
     ssl_certificate {{ ssl_cert_path }};
     ssl_certificate_key {{ ssl_key_path }};
     ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers '{{ nginx_ssl_ciphers }}';
     ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
     limit_req_status {{ nginx_rate_limit_status }};
     limit_req_log_level warn;
+{% if nginx_waf_enabled %}
+    modsecurity on;
+    modsecurity_rules_file /etc/nginx/modsecurity-hanride.conf;
+    modsecurity_transaction_id "$server_name-$request_id";
+{% endif %}
+
+    add_header Content-Security-Policy "{{ nginx_content_security_policy }}" always;
+    add_header Permissions-Policy "camera=(), geolocation=(), microphone=()" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "0" always;
+
+    location ~ /\.(?!well-known/) {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~* ^/(?:admin(?:/|$)|.*/admin(?:/|$)|.*(?:\.git|\.svn)(?:/|$)) {
+{% for cidr in nginx_admin_allowed_cidrs %}
+        allow {{ cidr }};
+{% endfor %}
+        deny all;
+    }
 
     # Serve the app under the same base_path on HTTPS as on HTTP
     location {{ base_path }}/ {
@@ -89,6 +150,9 @@ server {
     }
 
     location = {{ base_path }}/health {
+{% if nginx_waf_enabled %}
+        modsecurity off;
+{% endif %}
         limit_req zone=hanride_per_ip burst={{ nginx_rate_limit_burst }} nodelay;
         proxy_pass http://127.0.0.1:5000/health;
     }
