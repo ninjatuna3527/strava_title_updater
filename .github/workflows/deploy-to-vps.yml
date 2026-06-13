@@ -63,4 +63,4 @@ jobs:
           ADMIN_EMAIL: ${{ vars.ADMIN_EMAIL }}
         run: |
           ansible-playbook deploy/ansible/playbook.yml -i deploy/ansible/inventories/prod/inventory \
-            --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} scheduler_supervisor_program=${SUPERVISOR_SCHEDULER_PROGRAM} repo_branch=main base_path=${BASE_PATH} db_path=${DB_PATH} nginx_rate_limit_zone_size=${NGINX_RATE_LIMIT_ZONE_SIZE} nginx_rate_limit_rate=${NGINX_RATE_LIMIT_RATE} nginx_rate_limit_burst=${NGINX_RATE_LIMIT_BURST}"
+            --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} scheduler_supervisor_program=${SUPERVISOR_SCHEDULER_PROGRAM} repo_branch=main base_path=${BASE_PATH} db_path=${DB_PATH} nginx_rate_limit_zone_size=${NGINX_RATE_LIMIT_ZONE_SIZE} nginx_rate_limit_rate=${NGINX_RATE_LIMIT_RATE} nginx_rate_limit_burst=${NGINX_RATE_LIMIT_BURST} smtp_sender=${SMTP_SENDER} smtp_user=${SMTP_USER} smtp_pass=${SMTP_PASS} smtp_host=${SMTP_HOST} smtp_port=${SMTP_PORT} smtp_security=${SMTP_SECURITY} admin_email=${ADMIN_EMAIL}"
