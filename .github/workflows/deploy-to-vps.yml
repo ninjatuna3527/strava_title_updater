@@ -51,6 +51,15 @@ jobs:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           FLASK_SECRET_KEY: ${{ secrets.FLASK_SECRET_KEY }}
           DB_PATH: ${{ vars.DB_PATH }}
+          NGINX_RATE_LIMIT_ZONE_SIZE: ${{ vars.NGINX_RATE_LIMIT_ZONE_SIZE }}
+          NGINX_RATE_LIMIT_RATE: ${{ vars.NGINX_RATE_LIMIT_RATE }}
+          NGINX_RATE_LIMIT_BURST: ${{ vars.NGINX_RATE_LIMIT_BURST }}
+          SMTP_SENDER: ${{ vars.SMTP_SENDER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_HOST: ${{ vars.SMTP_HOST }}
+          SMTP_PORT: ${{ vars.SMTP_PORT }}
+          SMTP_SECURITY: ${{ vars.SMTP_SECURITY }}
+          ADMIN_EMAIL: ${{ vars.ADMIN_EMAIL }}
         run: |
           ansible-playbook deploy/ansible/playbook.yml -i deploy/ansible/inventories/prod/inventory \
-            --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} scheduler_supervisor_program=${SUPERVISOR_SCHEDULER_PROGRAM} repo_branch=main base_path=${BASE_PATH} db_path=${DB_PATH}"
+            --extra-vars "deploy_path=${DEPLOY_PATH} supervisor_program=${SUPERVISOR_PROGRAM} scheduler_supervisor_program=${SUPERVISOR_SCHEDULER_PROGRAM} repo_branch=main base_path=${BASE_PATH} db_path=${DB_PATH} nginx_rate_limit_zone_size=${NGINX_RATE_LIMIT_ZONE_SIZE} nginx_rate_limit_rate=${NGINX_RATE_LIMIT_RATE} nginx_rate_limit_burst=${NGINX_RATE_LIMIT_BURST}"

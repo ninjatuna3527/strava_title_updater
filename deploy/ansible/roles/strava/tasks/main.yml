@@ -11,6 +11,97 @@
     update_cache: yes
   become: true
 
+- name: Validate SMTP relay configuration
+  assert:
+    that:
+      - smtp_sender | length > 0
+      - smtp_pass | length > 0
+      - admin_email | length > 0
+      - smtp_host | length > 0
+      - smtp_port | int >= 1
+      - smtp_port | int <= 65535
+      - smtp_security in ['starttls', 'ssl', 'unencrypted']
+    fail_msg: >-
+      SMTP_SENDER, SMTP_PASS, SMTP_HOST, SMTP_PORT, and ADMIN_EMAIL must be
+      configured when smtp_enabled is true. SMTP_PORT must be between 1 and
+      65535, and SMTP_SECURITY must be starttls, ssl, or unencrypted.
+  when: smtp_enabled | bool
+  no_log: true
+
+- name: Install sendmail-compatible SMTP relay
+  apt:
+    name:
+      - ca-certificates
+      - msmtp
+      - msmtp-mta
+    state: present
+    update_cache: yes
+  when: smtp_enabled | bool
+  become: true
+
+- name: Ensure SMTP configuration group exists
+  group:
+    name: msmtp
+    state: present
+  when: smtp_enabled | bool
+  become: true
+
+- name: Allow the application user to use the SMTP relay
+  user:
+    name: "{{ ansible_user }}"
+    groups: msmtp
+    append: true
+  when: smtp_enabled | bool
+  become: true
+
+- name: Render system SMTP relay configuration
+  template:
+    src: msmtprc.j2
+    dest: /etc/msmtprc
+    owner: root
+    group: msmtp
+    mode: '0640'
+  when: smtp_enabled | bool
+  become: true
+  no_log: true
+
+- name: Install SMTP relay password
+  copy:
+    content: "{{ smtp_pass }}"
+    dest: /etc/msmtp-password
+    owner: root
+    group: msmtp
+    mode: '0640'
+  when: smtp_enabled | bool
+  become: true
+  no_log: true
+
+- name: Render sendmail aliases
+  template:
+    src: aliases.j2
+    dest: /etc/aliases
+    owner: root
+    group: root
+    mode: '0644'
+  when: smtp_enabled | bool
+  become: true
+
+- name: Ensure SMTP log file exists
+  file:
+    path: /var/log/msmtp.log
+    state: touch
+    owner: root
+    group: msmtp
+    mode: '0660'
+  when: smtp_enabled | bool
+  become: true
+
+- name: Verify the sendmail-compatible relay is available
+  command: /usr/sbin/sendmail --version
+  changed_when: false
+  when: smtp_enabled | bool
+  become: true
+
 
 - name: Ensure deploy directory exists
   file:

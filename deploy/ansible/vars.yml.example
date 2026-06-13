@@ -4,3 +4,14 @@ repo_url: "https://github.com/ninjatuna3527/strava_title_updater.git"
 repo_branch: main
 deploy_path: /srv/strava_title_updater
 supervisor_program: strava
+nginx_rate_limit_zone_size: "10m"
+nginx_rate_limit_rate: "10r/s"
+nginx_rate_limit_burst: 20
+nginx_rate_limit_status: 429
+smtp_enabled: false
+smtp_host: smtp.example.com
+smtp_port: 587
+smtp_security: starttls
+smtp_sender: sender@example.com
+smtp_pass: use-an-encrypted-variable-or-environment-secret
+admin_email: admin@example.com

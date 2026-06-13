@@ -23,6 +23,21 @@ base_path: "/hanride"
 # ACME webroot for Let's Encrypt HTTP-01 validation
 acme_webroot: "/var/www/letsencrypt"
 
+# Per-client nginx request limiting for all application routes
+nginx_rate_limit_zone_size: "10m"
+nginx_rate_limit_rate: "10r/s"
+nginx_rate_limit_burst: 20
+nginx_rate_limit_status: 429
+
+# Authenticated SMTP relay exposed through the sendmail-compatible interface
+smtp_enabled: false
+smtp_host: ""
+smtp_port: ""
+smtp_security: "starttls"
+smtp_sender: ""
+smtp_pass: ""
+admin_email: ""
+
 # Strava API credentials (provide via inventory/group_vars/host_vars or CI secrets)
 strava_client_id: ""
 strava_client_secret: ""
